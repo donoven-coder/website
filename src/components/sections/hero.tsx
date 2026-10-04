@@ -18,7 +18,7 @@ export function Hero() {
             <span className="line line-soft"><span className="reveal-load" style={{ '--d': 1 } as React.CSSProperties}>Less wasted ad spend.</span></span>
           </h1>
           <p className="hero-lede reveal-load" style={{ '--d': 2 } as React.CSSProperties}>
-            Ossmark Media runs Facebook, Instagram and Google ads for South Jersey businesses, built around one number: customers who actually booked.
+            Ossmark Media runs Facebook, Instagram and Google ads for home service businesses, built around one number: customers who actually booked.
           </p>
           <div className="hero-actions reveal-load" style={{ '--d': 3 } as React.CSSProperties}>
             <a className="btn btn-sky btn-lg" href="#book" data-cta="hero">Book your free discovery call</a>
