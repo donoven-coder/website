@@ -196,10 +196,28 @@ export function initSite(): () => void {
       }
     });
 
+    // The intro (routes draw, dots pop, labels fade) plays when the map is actually seen,
+    // not on a timer from page load, which had it finished before anyone scrolled to it.
+    // Never before ~1s, so it doesn't overlap the hero panel fading in.
+    const goLive = () => svg.classList.add("is-live");
+    if (reduceMotion.matches || !("IntersectionObserver" in window)) {
+      goLive();
+    } else {
+      const notBefore = performance.now() + 1000;
+      const introIO = new IntersectionObserver(([entry]) => {
+        if (!entry.isIntersecting) return;
+        introIO.disconnect();
+        window.setTimeout(goLive, Math.max(0, notBefore - performance.now()));
+      }, { threshold: 0.3 });
+      introIO.observe(svg);
+    }
+
     // Pause the ambient pulse loop when off screen or the tab is hidden.
     let visible = true;
     const sync = () => svg.classList.toggle("is-paused", !visible || document.hidden);
-    new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; sync(); }, { threshold: 0.05 }).observe(svg);
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; sync(); }, { threshold: 0.05 }).observe(svg);
+    }
     document.addEventListener("visibilitychange", sync);
   }
 
@@ -302,7 +320,9 @@ export function initSite(): () => void {
     });
 
     if (!reduceMotion.matches && "IntersectionObserver" in window) {
-      const DIM = 0.24;
+      // Dimmest state still meets WCAG AA 4.5:1 on this section's background:
+      // grey #8E8E8B needs 0.9 opacity, the sky-blue turn needs 0.62.
+      const floors = words.map((w) => (w.closest(".stance-turn") ? 0.62 : 0.9));
       let active = false;
       let queued = false;
       let lastLit = -1;
@@ -317,7 +337,7 @@ export function initSite(): () => void {
         lastLit = lit;
         words.forEach((w, i) => {
           const t = Math.min(1, Math.max(0, lit - i));
-          w.style.opacity = (DIM + (1 - DIM) * t).toFixed(3);
+          w.style.opacity = (floors[i] + (1 - floors[i]) * t).toFixed(3);
         });
       };
       const queue = () => { if (active && !queued) { queued = true; requestAnimationFrame(paint); } };
@@ -556,6 +576,8 @@ export function initSite(): () => void {
     }, { rootMargin: "0px 0px -12% 0px" });
     revealTargets.forEach((el) => revealIO.observe(el));
   }
+  // Reveals are wired up, so the no-script failsafe in index.html can stand down.
+  (window as unknown as { __ossmarkReady?: boolean }).__ossmarkReady = true;
 
   /* ------------------------------------------------------------------
      Mobile sticky "Book" bar: shows after the hero, hides at the booking

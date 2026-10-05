@@ -20,7 +20,6 @@ a `<!-- REPLACE: ... -->` comment and/or a `data-replace` attribute.
 
 ## Business details to confirm
 - [ ] **Launch timeline**: "within 7 days of kickoff".
-- [ ] **Recommended starting budget**: "$1,000 to $3,000 a month" (FAQ).
 - [ ] **Guarantee**: "20 booked jobs in 60 days, or month three is free" (hero, report section, FAQ). Make sure your client agreement matches it.
 - [ ] **Client promises**: month-to-month, client-owned accounts, weekly reporting, reply within one business day.
 - [ ] **Map home base**: `HUB` in `main.js` is set to Cherry Hill.

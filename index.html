@@ -33,7 +33,15 @@
   <link rel="preload" href="/assets/fonts/instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/dmsans.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preconnect" href="https://app.cal.com">
-  <script>document.documentElement.classList.add("js")</script>
+  <script>
+  document.documentElement.classList.add("js");
+  // Failsafe: if the page script hasn't started 3s after the document is ready, show all content
+  // (drops the "js" class that holds scroll-reveal content hidden). A normal load sets
+  // __ossmarkReady well before this fires, so nothing changes on screen.
+  addEventListener("DOMContentLoaded", function () {
+    setTimeout(function () { if (!window.__ossmarkReady) document.documentElement.classList.remove("js"); }, 3000);
+  });
+  </script>
   <!-- Meta Pixel (ID 1606518160921650): PageView site-wide. Lead and Schedule fire from src/lib/tracking.ts. -->
   <script>
   !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?

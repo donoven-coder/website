@@ -454,7 +454,7 @@ figure { margin: 0; }
   stroke-dasharray: var(--len);
   stroke-dashoffset: var(--len);
   animation: draw 1.6s var(--ease-out) forwards;
-  animation-delay: calc(1000ms + var(--i) * 45ms);
+  animation-delay: calc(400ms + var(--i) * 45ms);
 }
 @keyframes draw { to { stroke-dashoffset: 0; } }
 .map .town-dot {
@@ -462,7 +462,7 @@ figure { margin: 0; }
   transform-box: fill-box;
   transform-origin: center;
   animation: pop 500ms var(--ease-out) both;
-  animation-delay: calc(800ms + var(--i) * 45ms);
+  animation-delay: calc(200ms + var(--i) * 45ms);
 }
 .map .town-dot.is-hub { fill: var(--signal); }
 @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
@@ -474,7 +474,7 @@ figure { margin: 0; }
   transform-origin: center;
   opacity: 0;
   animation: pulse 3.6s var(--ease-out) infinite;
-  animation-delay: calc(2200ms + var(--p) * 1ms);
+  animation-delay: calc(1600ms + var(--p) * 1ms);
 }
 @keyframes pulse {
   0%   { transform: scale(0.4); opacity: 0; }
@@ -493,10 +493,13 @@ figure { margin: 0; }
   stroke-linejoin: round;
   opacity: 0;
   animation: fade 600ms var(--ease-out) forwards;
-  animation-delay: calc(1400ms + var(--i) * 45ms);
+  animation-delay: calc(800ms + var(--i) * 45ms);
 }
 @keyframes fade { to { opacity: 1; } }
 .map.is-paused .pulse { animation-play-state: paused; }
+/* The intro waits until the map scrolls into view (site-behaviors.ts adds .is-live);
+   while paused, each element holds its first frame. */
+.js .map:not(.is-live) :is(.route, .town-dot, .town-label, .pulse) { animation-play-state: paused; }
 
 @media (max-width: 860px) {
   .hero-media { grid-template-columns: 1fr; text-align: left; }
@@ -726,7 +729,7 @@ summary::-webkit-details-marker { display: none; }
   gap: 6px;
   max-width: 32rem;
 }
-.offer-title { font-family: var(--serif); font-size: var(--step-2); line-height: 1.1; }
+.offer-title { font-family: var(--serif); font-size: var(--step-2); line-height: 1.1; text-wrap: balance; }
 .offer p:not(.offer-title) { color: var(--grey-700); }
 .offer-link { justify-self: start; margin-top: 6px; font-weight: 600; text-underline-offset: 4px; min-height: 32px; display: inline-flex; align-items: center; }
 
@@ -916,10 +919,12 @@ input::placeholder, textarea::placeholder { color: #767672; }
   --logo: url("/assets/brand/ossmark-lockup.svg");
   width: min(420px, 78vw);
   aspect-ratio: 936 / 790;
+}
+.js .closer-logo {
   clip-path: circle(0% at 50% 50%);
   transition: clip-path 1600ms var(--ease-out);
 }
-.closer-logo.is-in { clip-path: circle(75% at 50% 50%); }
+.js .closer-logo.is-in { clip-path: circle(75% at 50% 50%); }
 .closer-title { font-family: var(--serif); font-weight: 400; font-size: var(--step-3); line-height: 1.02; }
 
 /* ==========================================================================
@@ -1001,7 +1006,7 @@ input::placeholder, textarea::placeholder { color: #767672; }
   }
   .map .pulse { display: none; }
   .js [data-reveal] { opacity: 1; transform: none; }
-  .closer-logo { clip-path: none; }
+  .js .closer-logo { clip-path: none; }
 }
 
 /* ==========================================================================
@@ -1222,8 +1227,9 @@ input::placeholder, textarea::placeholder { color: #767672; }
 
 /* ---- Headings: words rise out of a mask when they enter ------------------ */
 .split-word { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.2em; margin-bottom: -0.2em; }
-.split-word > span { display: inline-block; transform: translateY(105%); transition: transform 900ms var(--ease-out); transition-delay: calc(var(--w, 0) * 38ms); }
-.is-in .split-word > span, .split-word.is-in > span { transform: none; }
+.split-word > span { display: inline-block; }
+.js .split-word > span { transform: translateY(105%); transition: transform 900ms var(--ease-out); transition-delay: calc(var(--w, 0) * 38ms); }
+.js .is-in .split-word > span, .js .split-word.is-in > span { transform: none; }
 /* Non-heading blocks only settle in (no slide-up) */
 .js [data-reveal]:not([data-split]) { transform: none; transition: opacity 700ms var(--ease-out); }
 .js [data-split] { opacity: 1; transform: none; }

@@ -5,7 +5,15 @@ import { initSite } from "@/lib/site-behaviors";
 
 export default function App() {
   // Map, scroll reveals, sticky booking bar, booking qualifier + Cal.com embed and mobile menu.
-  useEffect(() => initSite(), []);
+  // A failure here must never take the page down: React would unmount everything on an
+  // uncaught effect error. Content stays readable and the failsafe in index.html reveals it.
+  useEffect(() => {
+    try {
+      return initSite();
+    } catch (err) {
+      console.error("Page behaviors failed to start", err);
+    }
+  }, []);
 
   return (
     <>
@@ -57,7 +65,7 @@ export default function App() {
           {/* STANCE */}
           <section className="stance" aria-labelledby="stance-title">
             <div className="wrap">
-              <h2 id="stance-title" className="stance-text" data-reveal>
+              <h2 id="stance-title" className="stance-text">
                 Most contractors have already tried ads. Boosted posts, a guy who ‘does marketing,’ a monthly report full of clicks and reach.
                 <span className="stance-turn">None of it tells you how many jobs you booked. That’s the number we build everything around.</span>
               </h2>
@@ -79,7 +87,7 @@ export default function App() {
                 <p className="founder-role">Founder, Ossmark Media</p>
                 {/* REPLACE: rewrite in your own words (where you're from, why you started, what you believe about ads) */}
                 <div className="founder-story" data-replace="Founder story">
-                  <p>I started Ossmark Media because I kept watching good South Jersey businesses burn money on ads that looked busy and booked nobody.</p>
+                  <p>I started Ossmark Media because I kept watching good home service businesses burn money on ads that looked busy and booked nobody.</p>
                   <p>When you work with us, you work with me. I plan your campaigns, I read your numbers every week, and I’m the one on the call. No account managers passing you around, and no 12-month contract.</p>
                 </div>
                 <a className="btn btn-dark" href="#book" data-cta="founder">Talk with Donoven</a>
@@ -130,8 +138,8 @@ export default function App() {
 
                 <div className="offer">
                   <p className="offer-label">Our guarantee</p>
-                  <p className="offer-title">20 booked jobs in 60 days, or month three is free.</p>
-                  <p>If our campaigns don’t put 20 booked jobs on your calendar in your first 60 days, you don’t pay for month three. We keep working either way.</p>
+                  <p className="offer-title">20 booked jobs in 60 days, or month 3 is free.</p>
+                  <p>If our campaigns don’t put 20 booked jobs on your calendar in your first 60 days, you don’t pay for month 3. We keep working either way.</p>
                   <a className="offer-link" href="#book" data-cta="guarantee">See if you qualify</a>
                 </div>
               </div>
@@ -144,8 +152,8 @@ export default function App() {
                   <div><dt>Ad spend</dt><dd>$ &mdash;</dd></div>
                   <div><dt>New leads</dt><dd>&mdash;</dd></div>
                   <div><dt>Cost per lead</dt><dd>$ &mdash;</dd></div>
-                  <div><dt>Booked customers</dt><dd>&mdash;</dd></div>
-                  <div className="is-key"><dt>Cost per booked customer</dt><dd>$ &mdash;</dd></div>
+                  <div><dt>Booked jobs</dt><dd>&mdash;</dd></div>
+                  <div className="is-key"><dt>Cost per booked job</dt><dd>$ &mdash;</dd></div>
                 </dl>
                 <p className="report-note">Your real numbers appear here from week one.</p>
               </div>
@@ -216,8 +224,7 @@ export default function App() {
                 </details>
                 <details>
                   <summary>How much should I spend on ads?<span className="faq-icon" aria-hidden="true"></span></summary>
-                  {/* REPLACE: set your recommended minimum ad budget */}
-                  <p>Most local businesses start between <span data-replace="Recommended starting budget">$1,000 and $3,000 a month</span> in ad spend. We’ll recommend a number based on your service area, your average job value and how many new customers you can handle.</p>
+                  <p>It depends on your service area, your average job value, and how much new work your crew can take on. We’ll recommend a starting budget on the call, built around what it takes to hit your booking goals, not a number pulled from a chart.</p>
                 </details>
                 <details>
                   <summary>What does it cost to work with you?<span className="faq-icon" aria-hidden="true"></span></summary>
@@ -248,7 +255,7 @@ export default function App() {
             <div className="wrap">
               <div className="book-head" data-reveal>
                 <h2 id="book-title" className="book-title">Book your free discovery call</h2>
-                <p>Pick a time that works for you. Fifteen minutes on Zoom, no pitch deck, no pressure.</p>
+                <p>A few quick questions, then pick a time. Fifteen minutes on Zoom, no pressure.</p>
               </div>
 
               <div className="book-grid">
