@@ -36,6 +36,8 @@ a `<!-- REPLACE: ... -->` comment and/or a `data-replace` attribute.
 - `src/components/sections/`: page sections (`hero.tsx`, `services.tsx`). Hero gradient colors are `HERO_COLORS` in `hero.tsx`.
 - `src/App.tsx`: the rest of the page. `src/lib/site-behaviors.ts`: map, menu, reveals, booking bar, booking questions + Cal.com embed and copy-email buttons. `src/lib/tracking.ts`: Meta Pixel events.
 - `src/styles/site.css`: the site's design system, inlined into the page at build time (`vite.config.ts`). `src/assets/`: fonts and logo (hashed at build time, cached for a year). `public/`: favicon, font licenses and the logo source file.
+- Prerendering: `npm run build` renders the page to static HTML (`src/entry-server.tsx`, `scripts/prerender.mjs`) so it paints before JavaScript loads; `src/main.tsx` then hydrates it. Anything rendered must not read `window` or `document` outside effects, or the build fails / hydration mismatches.
+- Logo files for print and docs: `brand-kit/` (black and white SVGs, not deployed).
 - Performance: keep anything in `/assets` hash-named (import it from `src/`), because `vercel.json` caches that folder for a year. The Cal.com script loads only once someone starts the booking questions.
 - Add more shadcn components with `npx shadcn@latest add <name>`.
 
