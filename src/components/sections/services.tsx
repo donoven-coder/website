@@ -24,7 +24,7 @@ const services: Service[] = [
   },
   {
     icon: Search,
-    title: "Google Search & Local Services ads",
+    title: "Google Ads",
     summary: "Show up when someone nearby searches for exactly what you do, right when they’re ready to hire.",
     included: [
       "Keyword research for your service area",
@@ -64,8 +64,8 @@ export function Services() {
         <div className="section-head" data-reveal>
           <h2 id="services-title" className="section-title">What we run for you</h2>
           <p className="section-sub">
-            Four pieces that work as one system: ads bring people in, pages turn them into calls, and tracking shows
-            which dollars worked.
+            Ads find the homeowners who need you. Pages turn them into calls. Tracking shows exactly which dollars came
+            back as booked jobs. One system, run by one person who actually answers your texts.
           </p>
         </div>
 

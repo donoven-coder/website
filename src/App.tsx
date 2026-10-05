@@ -4,7 +4,7 @@ import { Services } from "@/components/sections/services";
 import { initSite } from "@/lib/site-behaviors";
 
 export default function App() {
-  // Map, scroll reveals, sticky booking bar, Cal.com embed, mobile menu and form validation.
+  // Map, scroll reveals, sticky booking bar, booking qualifier + Cal.com embed and mobile menu.
   useEffect(() => initSite(), []);
 
   return (
@@ -49,7 +49,7 @@ export default function App() {
               <ul className="platform-list">
                 <li>Facebook</li>
                 <li>Instagram</li>
-                <li>Google Search</li>
+                <li>Google</li>
               </ul>
             </div>
           </section>
@@ -58,8 +58,8 @@ export default function App() {
           <section className="stance" aria-labelledby="stance-title">
             <div className="wrap">
               <h2 id="stance-title" className="stance-text" data-reveal>
-                Most local ad budgets vanish into boosted posts, broad targeting and reports nobody reads.
-                <span className="stance-turn">We judge every campaign by how many customers it booked.</span>
+                Most contractors have already tried ads. Boosted posts, a guy who ‘does marketing,’ a monthly report full of clicks and reach.
+                <span className="stance-turn">None of it tells you how many jobs you booked. That’s the number we build everything around.</span>
               </h2>
             </div>
           </section>
@@ -128,14 +128,11 @@ export default function App() {
                 <h2 id="report-title" className="section-title">The report you’ll get every Monday</h2>
                 <p className="section-sub">No 40-page decks or vanity metrics. Five numbers that tell you whether your ads are making money, readable on your phone in under a minute.</p>
 
-                {/*
-                  REPLACE (optional): founding-client offer. Strong for a new agency with no case studies yet.
-                  Edit the terms or delete this block. Once you have results, swap it for a case study.
-                */}
-                <div className="offer" data-replace="Founding client offer (optional)">
-                  <p className="offer-title">Founding client offer</p>
-                  <p>Our first 5 South Jersey clients get their setup fee waived and a locked-in rate for 12 months.</p>
-                  <a className="offer-link" href="#book" data-cta="offer">Claim a spot on a call</a>
+                <div className="offer">
+                  <p className="offer-label">Our guarantee</p>
+                  <p className="offer-title">20 booked jobs in 60 days, or month three is free.</p>
+                  <p>If our campaigns don’t put 20 booked jobs on your calendar in your first 60 days, you don’t pay for month three. We keep working either way.</p>
+                  <a className="offer-link" href="#book" data-cta="guarantee">See if you qualify</a>
                 </div>
               </div>
               <div className="report-card" role="group" aria-labelledby="report-card-title" data-reveal>
@@ -158,20 +155,22 @@ export default function App() {
           {/* LOCAL */}
           <section className="local" id="local" aria-labelledby="local-title">
             <div className="wrap local-grid">
-              <h2 id="local-title" className="local-title" data-reveal>We live where your customers live.</h2>
+              <h2 id="local-title" className="local-title" data-reveal>We know how South Jersey hires a contractor.</h2>
               <div className="local-body" data-reveal>
                 <p>
-                  Ossmark Media is a South Jersey agency, not a national shop that treats Haddonfield and Hammonton like the same zip code.
-                  We plan around shore season, school calendars and how people here actually look for a contractor, a dentist or a place to eat.
+                  When the AC dies in July or a pipe bursts in January, homeowners here don’t shop around for long. They call whoever shows up first and looks legit.
+                  We build your ads around those moments, town by town from Burlington to Cape May, so the business that shows up first is yours.
                 </p>
-                <p className="local-industries-label">Businesses we’re built for</p>
+                <p className="local-industries-label">Trades we work with</p>
                 <ul className="chips">
-                  <li>Home services &amp; contractors</li>
-                  <li>Med spas &amp; salons</li>
-                  <li>Dental &amp; health practices</li>
-                  <li>Restaurants &amp; bars</li>
-                  <li>Real estate</li>
-                  <li>Shore rentals &amp; seasonal businesses</li>
+                  <li>HVAC</li>
+                  <li>Plumbing</li>
+                  <li>Roofing</li>
+                  <li>Electrical</li>
+                  <li>Remodeling &amp; general contracting</li>
+                  <li>Landscaping &amp; hardscaping</li>
+                  <li>Pest control</li>
+                  <li>Exterior cleaning &amp; pressure washing</li>
                 </ul>
               </div>
             </div>
@@ -221,13 +220,12 @@ export default function App() {
                   <p>Most local businesses start between <span data-replace="Recommended starting budget">$1,000 and $3,000 a month</span> in ad spend. We’ll recommend a number based on your service area, your average job value and how many new customers you can handle.</p>
                 </details>
                 <details>
-                  <summary>What do you charge?<span className="faq-icon" aria-hidden="true"></span></summary>
-                  {/* REPLACE: add your pricing model (flat monthly fee, % of spend, setup fee) */}
-                  <p data-replace="Pricing">Our management fee is a flat monthly rate based on how many platforms we run for you. You’ll get an exact number before you commit to anything.</p>
+                  <summary>What does it cost to work with you?<span className="faq-icon" aria-hidden="true"></span></summary>
+                  <p>It depends on your trade, your service area, and how fast you want to grow. We’ll map it out on the call and give you a straight answer before you commit to anything.</p>
                 </details>
                 <details>
                   <summary>How fast will I see results?<span className="faq-icon" aria-hidden="true"></span></summary>
-                  <p>Leads usually start coming in during the first few weeks. The first month is about learning which ads, towns and offers work; months two and three are where cost per customer drops as we move budget to the winners.</p>
+                  <p>Campaigns go live within 7 days of kickoff. The first few weeks are about finding which ads and offers book jobs in your area, then we put more behind what’s working. That’s why our guarantee covers your first 60 days.</p>
                 </details>
                 <details>
                   <summary>Do I need a new website?<span className="faq-icon" aria-hidden="true"></span></summary>
@@ -255,75 +253,67 @@ export default function App() {
 
               <div className="book-grid">
                 <div className="book-calendar">
-                  <div className="calendar-frame" data-cal data-cal-link="ossmark-media-qzze1b/15min">
-                    {/* Cal.com inline embed mounts here (see site-behaviors.ts, same settings as Cal's embed snippet) */}
+                  <div className="calendar-frame is-locked" data-cal data-cal-link="ossmark-media-qzze1b/15min">
+                    {/* Cal.com inline embed mounts here once the qualifier is answered (see site-behaviors.ts) */}
                     <div className="calendar-mount" id="my-cal-inline-15min" data-cal-mount></div>
+                    <div className="calendar-lock" data-cal-lock>
+                      <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3.5" y="4.5" width="13" height="12" rx="2"/><path d="M3.5 8.5h13M7 2.8v3.4M13 2.8v3.4"/></svg>
+                      <p>Answer a few quick questions to see open times.</p>
+                    </div>
                     <div className="calendar-fallback">
                       <p className="calendar-fallback-title">Pick a time for your call</p>
                       <p>The calendar opens in a new tab if it doesn’t load here.</p>
-                      <a className="btn btn-dark" href="https://cal.com/ossmark-media-qzze1b/15min" target="_blank" rel="noopener">Open the booking calendar</a>
+                      <a className="btn btn-dark" href="https://cal.com/ossmark-media-qzze1b/15min" target="_blank" rel="noopener" data-cal-direct>Open the booking calendar</a>
                     </div>
                   </div>
-                  <p className="book-direct">Calendar not loading? <a href="https://cal.com/ossmark-media-qzze1b/15min" target="_blank" rel="noopener">Open the booking page</a></p>
+                  <p className="book-direct">
+                    Prefer email? <span className="book-direct-address">donoven@ossmark.media</span>
+                    <button type="button" className="copy-btn copy-btn-light" data-copy="donoven@ossmark.media" aria-label="Copy email address donoven@ossmark.media">
+                      <span data-copy-label>Copy</span>
+                    </button>
+                  </p>
                   <p className="book-confirm" role="status" aria-live="polite" data-booked></p>
                 </div>
 
-                <div className="book-message">
-                  <h3 className="book-message-title">
-                    <button type="button" className="book-message-toggle" aria-expanded="false" aria-controls="book-message-panel" data-message-toggle>
-                      Rather send a message?
-                      <span className="faq-icon" aria-hidden="true"></span>
-                    </button>
-                    <span className="book-message-heading">Rather send a message?</span>
-                  </h3>
-                  <div id="book-message-panel" className="book-message-panel" data-message-panel>
-                  <div className="book-message-inner">
-                  <p className="book-message-sub">Tell us about your business and we’ll reply within one business day.</p>
-                  {/*
-                    REPLACE: set data-endpoint to your form handler (Formspree, Netlify Forms, Basin, CRM webhook).
-                    While it is empty, submitting opens the visitor's email app with the message filled in, so no lead is lost.
-                  */}
-                  <form className="contact-form" noValidate data-form data-endpoint="" data-mailto="donoven@ossmark.media">
-                    <div className="form-error-summary" tabIndex={-1} hidden data-error-summary>
-                      <p>Please fix the following:</p>
-                      <ul></ul>
-                    </div>
+                <div className="book-message book-qualify">
+                  <h3 className="book-message-title">First, a few quick questions.</h3>
+                  <p className="book-message-sub">So we spend the call on your business, not the basics.</p>
+                  <form className="contact-form" noValidate data-qualify>
                     <div className="field">
-                      <label htmlFor="f-name">Your name <span className="req" aria-hidden="true">*</span></label>
-                      <input id="f-name" name="name" type="text" autoComplete="name" required aria-describedby="f-name-err" />
-                      <p className="field-error" id="f-name-err" aria-live="polite"></p>
-                    </div>
-                    <div className="field">
-                      <label htmlFor="f-business">Business name <span className="req" aria-hidden="true">*</span></label>
-                      <input id="f-business" name="business" type="text" autoComplete="organization" required aria-describedby="f-business-err" />
-                      <p className="field-error" id="f-business-err" aria-live="polite"></p>
-                    </div>
-                    <div className="field">
-                      <label htmlFor="f-email">Email <span className="req" aria-hidden="true">*</span></label>
-                      <input id="f-email" name="email" type="email" autoComplete="email" required aria-describedby="f-email-err" />
-                      <p className="field-error" id="f-email-err" aria-live="polite"></p>
-                    </div>
-                    <div className="field">
-                      <label htmlFor="f-budget">Monthly ad budget</label>
-                      <select id="f-budget" name="budget">
-                        <option value="">Not sure yet</option>
-                        <option>Under $1,000</option>
-                        <option>$1,000–$3,000</option>
-                        <option>$3,000–$7,500</option>
-                        <option>$7,500+</option>
+                      <label htmlFor="q-trade">What’s your trade? <span className="req" aria-hidden="true">*</span></label>
+                      <select id="q-trade" name="trade" required aria-describedby="q-trade-err" defaultValue="">
+                        <option value="" disabled>Choose one</option>
+                        <option>HVAC</option>
+                        <option>Plumbing</option>
+                        <option>Roofing</option>
+                        <option>Electrical</option>
+                        <option>Remodeling &amp; general contracting</option>
+                        <option>Landscaping &amp; hardscaping</option>
+                        <option>Pest control</option>
+                        <option>Exterior cleaning &amp; pressure washing</option>
+                        <option>Other home service</option>
                       </select>
+                      <p className="field-error" id="q-trade-err" aria-live="polite"></p>
                     </div>
                     <div className="field">
-                      <label htmlFor="f-message">What would you like more of?</label>
-                      <textarea id="f-message" name="message" rows={3} placeholder="More calls for kitchen remodels in Cherry Hill"></textarea>
+                      <label htmlFor="q-budget">What are you putting into ads each month? <span className="req" aria-hidden="true">*</span></label>
+                      <select id="q-budget" name="ad_budget" required aria-describedby="q-budget-err" defaultValue="">
+                        <option value="" disabled>Choose one</option>
+                        <option>Not running ads yet</option>
+                        <option>Under $1,000</option>
+                        <option>$1,000–$2,500</option>
+                        <option>$2,500–$5,000</option>
+                        <option>$5,000+</option>
+                      </select>
+                      <p className="field-error" id="q-budget-err" aria-live="polite"></p>
                     </div>
-                    <button className="btn btn-dark btn-block" type="submit" data-submit>
-                      <span className="btn-label">Send message</span>
-                    </button>
-                    <p className="form-status" role="status" aria-live="polite" data-status></p>
+                    <div className="field">
+                      <label htmlFor="q-goal">What would you like more of?</label>
+                      <input id="q-goal" name="goal" type="text" placeholder="More AC replacement calls in Cherry Hill" />
+                    </div>
+                    <button className="btn btn-dark btn-block" type="submit">Show open times</button>
+                    <p className="visually-hidden" role="status" aria-live="polite" data-qualify-status></p>
                   </form>
-                  </div>
-                  </div>
                 </div>
               </div>
             </div>

@@ -379,7 +379,9 @@ figure { margin: 0; }
   font-size: var(--step--1);
   color: var(--grey-600);
 }
-.trust-row li { display: inline-flex; align-items: center; gap: 8px; }
+.trust-row li, .trust-row > span { display: inline-flex; align-items: center; gap: 8px; }
+.trust-row-guarantee { margin-top: 10px; }
+@media (max-width: 420px) { .trust-row:not(.trust-row-guarantee) { gap: 10px 16px; } }
 .trust-row svg {
   width: 18px; height: 18px;
   fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
@@ -535,6 +537,7 @@ figure { margin: 0; }
   color: #8E8E8B;
 }
 .stance-turn { display: block; margin-top: 0.45em; color: var(--white); font-style: italic; }
+.stance-text { max-width: 28ch; margin-inline: auto; text-align: center; }
 
 /* ==========================================================================
    Services
@@ -838,8 +841,8 @@ summary::-webkit-details-marker { display: none; }
 .calendar-fallback-title { font-family: var(--serif); font-size: var(--step-2); color: var(--ink); }
 .calendar-fallback .btn { justify-self: center; margin-top: var(--space-2); }
 .calendar-frame.is-loaded .calendar-fallback { display: none; }
-.book-direct { margin-top: var(--space-2); font-size: var(--step--1); color: var(--grey-600); }
-.book-direct a { color: var(--ink); font-weight: 600; text-underline-offset: 3px; }
+.book-direct { margin-top: var(--space-2); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: var(--step--1); color: var(--grey-600); }
+.book-direct-address { color: var(--ink); font-weight: 600; user-select: all; }
 .book-confirm { margin-top: var(--space-2); font-weight: 600; }
 .book-confirm:empty { display: none; }
 
@@ -1158,8 +1161,8 @@ input::placeholder, textarea::placeholder { color: #767672; }
 .report-metrics .is-key dd { color: var(--sky); }
 .report-card-tag { background: var(--sky-tint); color: #12395A; }
 .offer { border-color: var(--line); }
-.offer-title { display: flex; align-items: center; gap: 10px; }
-.offer-title::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--sky); box-shadow: 0 0 0 4px var(--sky-tint); flex: none; }
+.offer-label { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: var(--step--1); color: var(--grey-700); }
+.offer-label::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--sky); box-shadow: 0 0 0 4px var(--sky-tint); flex: none; }
 .local-industries-label { color: var(--sky); }
 .chips li { transition: border-color var(--dur) var(--ease-out), background-color var(--dur) var(--ease-out); }
 .chips li:hover { border-color: var(--sky); background: rgba(168, 216, 255, 0.08); }
@@ -1353,35 +1356,6 @@ input::placeholder, textarea::placeholder { color: #767672; }
 @media (max-width: 760px) {
   .service-card-body { gap: 0; }
   .service-card-list { padding-top: 12px; }
-}
-
-/* ---- Booking: message form folds away on phones -------------------------- */
-.book-message-toggle { display: none; }
-@media (max-width: 960px) {
-  .book-message-heading { display: none; }
-  .book-message-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    min-height: 48px;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--ink);
-    font: inherit;
-    cursor: pointer;
-    text-align: left;
-  }
-  .book-message-toggle[aria-expanded="true"] .faq-icon { background: var(--black); border-color: var(--black); }
-  .book-message-toggle[aria-expanded="true"] .faq-icon::before,
-  .book-message-toggle[aria-expanded="true"] .faq-icon::after { background: var(--sky); }
-  .book-message-toggle[aria-expanded="true"] .faq-icon::after { transform: rotate(0deg); }
-  .book-message-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 480ms var(--ease-out); }
-  .book-message-panel > * { min-height: 0; overflow: hidden; visibility: hidden; transition: visibility 0s linear 480ms; }
-  .book-message-panel.is-open { grid-template-rows: 1fr; }
-  .book-message-panel.is-open > * { visibility: visible; transition-delay: 0s; }
-  .book-message-panel .contact-form { padding: 2px; }
 }
 
 /* ==========================================================================
@@ -1598,3 +1572,59 @@ input::placeholder, textarea::placeholder { color: #767672; }
 }
 .copy-btn:hover { border-color: var(--sky); color: var(--sky); }
 .copy-btn.is-copied { border-color: var(--sky); background: var(--sky); color: var(--black); }
+
+/* ---- Booking qualifier + locked calendar --------------------------------- */
+.copy-btn-light { border-color: var(--line); color: var(--ink); }
+.copy-btn-light:hover { border-color: var(--ink); color: var(--ink); }
+.copy-btn-light.is-copied { border-color: var(--sky); background: var(--sky); color: var(--black); }
+
+.book-qualify .contact-form { margin-top: var(--space-3); }
+select {
+  appearance: none;
+  padding-right: 40px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23141414' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='m6 8 4 4 4-4'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 18px 18px;
+  cursor: pointer;
+}
+select:invalid { color: #767672; }
+select option { color: var(--ink); }
+.field.has-error select { border-color: var(--danger); }
+
+/* Calm placeholder until the questions are answered: a faint month grid, no blur */
+.calendar-lock {
+  position: absolute;
+  inset: 1.5px;
+  z-index: 3;
+  display: none;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: var(--space-4);
+  text-align: center;
+  border-radius: calc(var(--radius-lg) - 1.5px);
+  color: var(--grey-600);
+  background:
+    radial-gradient(60% 50% at 50% 50%, var(--white) 0%, rgba(255, 255, 255, 0.86) 55%, rgba(255, 255, 255, 0.6) 100%),
+    repeating-linear-gradient(90deg, transparent 0 calc(100% / 7 - 1px), var(--line) calc(100% / 7 - 1px) calc(100% / 7)),
+    repeating-linear-gradient(0deg, transparent 0 79px, var(--line) 79px 80px),
+    var(--paper);
+}
+.calendar-lock svg {
+  width: 40px; height: 40px; padding: 9px;
+  border-radius: 50%;
+  background: var(--sky-tint);
+  fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+}
+.calendar-lock p { max-width: 22ch; font-family: var(--serif); font-size: var(--step-2); line-height: 1.15; color: var(--ink); }
+.calendar-frame.is-locked .calendar-lock { display: grid; }
+.calendar-frame.is-locked .calendar-fallback { display: none; }
+
+@media (max-width: 960px) {
+  .book-qualify { order: -1; }
+  .calendar-frame.is-locked { min-height: 340px; }
+  .calendar-frame { scroll-margin-top: 88px; }
+}
+/* Keep the example answer readable on narrow phones (input text stays 16px, so iOS doesn't zoom) */
+@media (max-width: 420px) { .book-qualify input::placeholder { font-size: 0.875rem; } }

@@ -1,11 +1,13 @@
 // Page behaviors: hero map, mobile menu, scroll reveals, process progress,
-// sticky booking bar, lazy Cal.com embed, copy-email buttons and the message form.
+// sticky booking bar, booking qualifier + lazy Cal.com embed and copy-email buttons.
 // Runs once after React has rendered the page (see App.tsx).
+
+import { trackLead, trackSchedule, type QualifierAnswers } from "@/lib/tracking";
 
 let initialized = false;
 
 // Set by the hosted preview build (see scripts/build-preview.py): the preview host blocks
-// third-party frames and mail links, so the Cal.com calendar links out and the form stays local.
+// third-party frames, so the Cal.com calendar links out instead of embedding.
 const isPreview = () => Boolean((window as unknown as { OSSMARK_PREVIEW?: boolean }).OSSMARK_PREVIEW);
 
 export function initSite(): () => void {
@@ -524,18 +526,6 @@ export function initSite(): () => void {
     });
   }
 
-  /* Phones: the message form folds away so the calendar stays the main action */
-  const msgToggle = document.querySelector<HTMLButtonElement>("[data-message-toggle]");
-  const msgPanel = document.querySelector<HTMLElement>("[data-message-panel]");
-  if (msgToggle && msgPanel) {
-    msgToggle.addEventListener("click", () => {
-      const open = msgToggle.getAttribute("aria-expanded") !== "true";
-      msgToggle.setAttribute("aria-expanded", String(open));
-      msgPanel.classList.toggle("is-open", open);
-      if (open) msgPanel.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true });
-    });
-  }
-
   /* ------------------------------------------------------------------
      Header: thin progress line showing how far down the page you are
      ------------------------------------------------------------------ */
@@ -591,24 +581,30 @@ export function initSite(): () => void {
   }
 
   /* ------------------------------------------------------------------
-     Cal.com inline embed (official embed.js), loaded only when the visitor
-     heads for it. Booking link: data-cal-link on the calendar frame.
+     Booking: a short qualifier unlocks the Cal.com calendar (official embed.js).
+     The script preloads when the visitor heads for it; the calendar itself
+     mounts on submit, with the answers prefilled as booking notes + metadata.
+     Booking link: data-cal-link on the calendar frame.
      ------------------------------------------------------------------ */
   const cal = document.querySelector<HTMLElement>("[data-cal]");
-  if (cal) {
-    let loaded = false;
+  const qualify = document.querySelector<HTMLFormElement>("[data-qualify]");
+  if (cal && qualify) {
+    const ns = "15min"; // matches the namespace in Cal.com's embed snippet
+    const calLink = cal.dataset.calLink!;
     const booked = document.querySelector("[data-booked]");
-    const loadCal = () => {
-      if (loaded || isPreview()) return;
-      loaded = true;
-      const calLink = cal.dataset.calLink!;
-      const ns = "15min"; // matches the namespace in Cal.com's embed snippet
+    const direct = cal.querySelector<HTMLAnchorElement>("[data-cal-direct]");
+    let answers: QualifierAnswers | null = null;
+    let leadSent = false;
+    let scheduleSent = false;
+    let api: ((...args: unknown[]) => void) | null = null;
 
+    type CalApi = ((...args: unknown[]) => void) & { q?: unknown[][]; ns?: Record<string, CalApi>; loaded?: boolean };
+    const getApi = () => {
+      if (api || isPreview()) return api;
       // Cal.com's documented loader: queues calls until embed.js has loaded.
-      type CalApi = ((...args: unknown[]) => void) & { q?: unknown[][]; ns?: Record<string, CalApi>; loaded?: boolean };
       const w = window as unknown as { Cal?: CalApi };
       if (!w.Cal) {
-        const push = (api: CalApi, args: unknown[]) => { (api.q = api.q || []).push(args); };
+        const push = (target: CalApi, args: unknown[]) => { (target.q = target.q || []).push(args); };
         const calFn: CalApi = function (...args: unknown[]) {
           const c = w.Cal!;
           if (!c.loaded) {
@@ -622,10 +618,10 @@ export function initSite(): () => void {
             c.loaded = true;
           }
           if (args[0] === "init") {
-            const api: CalApi = function (...a: unknown[]) { push(api, a); };
+            const nsApi: CalApi = function (...a: unknown[]) { push(nsApi, a); };
             const name = args[1];
             if (typeof name === "string") {
-              c.ns![name] = c.ns![name] || api;
+              c.ns![name] = c.ns![name] || nsApi;
               push(c.ns![name], args);
               push(c, ["initNamespace", name]);
             } else push(c, args);
@@ -641,40 +637,112 @@ export function initSite(): () => void {
       const calCfg = Cal as unknown as { config?: Record<string, unknown> };
       calCfg.config = calCfg.config || {};
       calCfg.config.forwardQueryParams = true;
-      const api = Cal.ns![ns];
-      api("inline", {
-        elementOrSelector: "#my-cal-inline-15min",
-        calLink,
-        config: { layout: "month_view", useSlotsViewOnSmallScreen: "true", theme: "light" },
-      });
-      api("ui", {
+      const nsApi = Cal.ns![ns];
+      nsApi("ui", {
         theme: "light",
         hideEventTypeDetails: false,
         layout: "month_view",
         cssVarsPerTheme: { light: { "cal-brand": "#000000" }, dark: { "cal-brand": "#A8D8FF" } },
       });
       // Hide the placeholder once the calendar is ready; show the link-out if it fails.
-      api("on", { action: "linkReady", callback: () => cal.classList.add("is-loaded") });
-      api("on", { action: "linkFailed", callback: () => cal.classList.add("is-failed") });
+      nsApi("on", { action: "linkReady", callback: () => cal.classList.add("is-loaded") });
+      nsApi("on", { action: "linkFailed", callback: () => cal.classList.add("is-failed") });
+      // Schedule fires only on a completed booking (both event names exist across embed versions).
       const onBooked = () => {
         if (booked) booked.textContent = "You’re booked. Check your email for the confirmation and meeting details.";
-        // REPLACE (optional): fire your ad pixels' conversion events here, e.g. fbq('track', 'Schedule').
+        if (!scheduleSent) { scheduleSent = true; trackSchedule(answers); }
       };
-      api("on", { action: "bookingSuccessfulV2", callback: onBooked });
-      api("on", { action: "bookingSuccessful", callback: onBooked });
+      nsApi("on", { action: "bookingSuccessfulV2", callback: onBooked });
+      nsApi("on", { action: "bookingSuccessful", callback: onBooked });
+      api = nsApi;
+      return api;
+    };
 
+    // Preload embed.js when the booking section is near, or when someone clicks a "Book" link.
+    if ("IntersectionObserver" in window) {
+      const calIO = new IntersectionObserver(([e]) => { if (e.isIntersecting) { getApi(); calIO.disconnect(); } }, { rootMargin: "800px 0px" });
+      calIO.observe(cal);
+    } else {
+      getApi();
+    }
+    document.addEventListener("click", (e) => { if ((e.target as Element).closest('a[href="#book"]')) getApi(); });
+
+    // Prefill for Cal: "notes" fills the booking's Additional notes; metadata[...] is stored on the booking.
+    const prefill = (a: QualifierAnswers): Record<string, string> => {
+      const notes = [
+        a.fit === "review" ? "[Review fit]" : "",
+        `Trade: ${a.trade}`,
+        `Monthly ad spend: ${a.ad_budget}`,
+        a.goal ? `Wants more of: ${a.goal}` : "",
+      ].filter(Boolean).join("\n");
+      return {
+        notes,
+        "metadata[trade]": a.trade,
+        "metadata[ad_budget]": a.ad_budget,
+        "metadata[goal]": a.goal || "-",
+        "metadata[fit]": a.fit,
+      };
+    };
+
+    const mountCalendar = (a: QualifierAnswers) => {
+      const fields = prefill(a);
+      if (direct) {
+        const url = new URL("https://cal.com/" + calLink);
+        Object.entries(fields).forEach(([k, v]) => url.searchParams.set(k, v));
+        direct.href = url.toString();
+      }
+      cal.classList.remove("is-locked", "is-loaded", "is-failed");
+      const calApi = getApi();
+      if (!calApi) { cal.classList.add("is-failed"); return; } // preview: show the link-out
+      // A fresh mount each time, so changed answers re-render the calendar with the new prefill.
+      const oldMount = cal.querySelector<HTMLElement>("[data-cal-mount]")!;
+      const mount = oldMount.cloneNode(false) as HTMLElement;
+      oldMount.replaceWith(mount);
+      calApi("inline", {
+        elementOrSelector: "#my-cal-inline-15min",
+        calLink,
+        config: { layout: "month_view", useSlotsViewOnSmallScreen: "true", theme: "light", ...fields },
+      });
       // If nothing has rendered after 12s (blocked script, slow network), offer the direct link.
       window.setTimeout(() => { if (!cal.classList.contains("is-loaded")) cal.classList.add("is-failed"); }, 12000);
     };
 
-    // Start loading when the booking section is near, or as soon as someone clicks a "Book" link.
-    if ("IntersectionObserver" in window) {
-      const calIO = new IntersectionObserver(([e]) => { if (e.isIntersecting) { loadCal(); calIO.disconnect(); } }, { rootMargin: "800px 0px" });
-      calIO.observe(cal);
-    } else {
-      loadCal();
-    }
-    document.addEventListener("click", (e) => { if ((e.target as Element).closest('a[href="#book"]')) loadCal(); });
+    const status = qualify.querySelector<HTMLElement>("[data-qualify-status]")!;
+    const required = [...qualify.querySelectorAll<HTMLSelectElement>("select[required]")];
+    const errorFor: Record<string, string> = { trade: "Choose your trade.", ad_budget: "Choose your monthly ad spend." };
+    const validate = (sel: HTMLSelectElement) => {
+      const msg = sel.value ? "" : errorFor[sel.name];
+      sel.closest(".field")!.classList.toggle("has-error", Boolean(msg));
+      sel.setAttribute("aria-invalid", msg ? "true" : "false");
+      const err = qualify.querySelector(`#${sel.id}-err`);
+      if (err) err.textContent = msg;
+      return msg;
+    };
+    required.forEach((sel) => sel.addEventListener("change", () => validate(sel)));
+
+    qualify.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const invalid = required.filter((sel) => validate(sel));
+      if (invalid.length) { invalid[0].focus(); return; }
+
+      const data = new FormData(qualify);
+      const trade = String(data.get("trade"));
+      const adBudget = String(data.get("ad_budget"));
+      answers = {
+        trade,
+        ad_budget: adBudget,
+        goal: String(data.get("goal") ?? "").trim(),
+        // Nobody is turned away; these bookings are just tagged for a closer look.
+        fit: trade === "Other home service" || adBudget === "Under $1,000" ? "review" : "good",
+      };
+      if (!leadSent) { leadSent = true; trackLead(answers); }
+      mountCalendar(answers);
+      status.textContent = "Open times are showing in the calendar.";
+      // On phones the calendar sits below the questions; bring it into view.
+      if (window.matchMedia("(max-width: 960px)").matches) {
+        cal.scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" });
+      }
+    });
   }
 
   /* ------------------------------------------------------------------
@@ -702,119 +770,5 @@ export function initSite(): () => void {
     });
   });
 
-  /* ------------------------------------------------------------------
-     Contact form: validate on blur, summarise errors on submit
-     ------------------------------------------------------------------ */
-  const form = document.querySelector<HTMLFormElement>("[data-form]");
-  if (form) setupForm(form);
-
-  function setupForm(f: HTMLFormElement) {
-    const summary = f.querySelector<HTMLElement>("[data-error-summary]")!;
-    const status = f.querySelector<HTMLElement>("[data-status]")!;
-    const submit = f.querySelector<HTMLButtonElement>("[data-submit]")!;
-
-    type Rule = (v: string) => string;
-    const rules: Record<string, Rule> = {
-      name: (v) => (v.trim() ? "" : "Enter your name."),
-      business: (v) => (v.trim() ? "" : "Enter your business name."),
-      email: (v) => {
-        if (!v.trim()) return "Enter your email address.";
-        return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? "" : "Enter an email address like name@business.com.";
-      },
-    };
-
-    const validate = (input: HTMLInputElement) => {
-      const rule = rules[input.name];
-      if (!rule) return "";
-      const msg = rule(input.value);
-      const field = input.closest(".field")!;
-      const err = f.querySelector(`#${input.id}-err`);
-      field.classList.toggle("has-error", Boolean(msg));
-      input.setAttribute("aria-invalid", msg ? "true" : "false");
-      if (err) err.textContent = msg;
-      return msg;
-    };
-
-    Object.keys(rules).forEach((name) => {
-      const input = f.elements.namedItem(name) as HTMLInputElement;
-      input.addEventListener("blur", () => { if (input.value || input.getAttribute("aria-invalid")) validate(input); });
-      input.addEventListener("input", () => { if (input.getAttribute("aria-invalid") === "true") validate(input); });
-    });
-
-    f.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      status.textContent = "";
-      status.className = "form-status";
-
-      const errors = Object.keys(rules)
-        .map((name) => { const input = f.elements.namedItem(name) as HTMLInputElement; return { input, msg: validate(input) }; })
-        .filter((x) => x.msg);
-
-      const list = summary.querySelector("ul")!;
-      list.innerHTML = "";
-      if (errors.length) {
-        errors.forEach(({ input, msg }) => {
-          const li = document.createElement("li");
-          const a = document.createElement("a");
-          a.href = `#${input.id}`;
-          a.textContent = msg;
-          a.addEventListener("click", (ev) => { ev.preventDefault(); input.focus(); });
-          li.appendChild(a);
-          list.appendChild(li);
-        });
-        summary.hidden = false;
-        summary.focus();
-        return;
-      }
-      summary.hidden = true;
-
-      const data = Object.fromEntries(new FormData(f).entries());
-      const endpoint = f.dataset.endpoint;
-
-      if (isPreview()) {
-        status.textContent = "This is a preview, so the message wasn’t sent. On the live site it goes to donoven@ossmark.media.";
-        status.classList.add("is-success");
-        return;
-      }
-
-      if (!endpoint) {
-        // No form handler configured yet: hand off to the visitor's email app.
-        const body = [
-          `Name: ${data.name}`,
-          `Business: ${data.business}`,
-          `Email: ${data.email}`,
-          `Phone: ${data.phone || "-"}`,
-          `Monthly ad budget: ${data.budget || "Not sure yet"}`,
-          "",
-          data.message || "",
-        ].join("\n");
-        const subject = `Free ad audit request: ${data.business}`;
-        location.href = `mailto:${f.dataset.mailto}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        status.textContent = "Your email app should open with your request filled in. Hit send and we’ll reply within one business day.";
-        status.classList.add("is-success");
-        return;
-      }
-
-      submit.setAttribute("aria-busy", "true");
-      submit.disabled = true;
-      try {
-        const res = await fetch(endpoint, {
-          method: "POST",
-          headers: { Accept: "application/json", "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        });
-        if (!res.ok) throw new Error(String(res.status));
-        f.reset();
-        status.textContent = "Request sent. We’ll reply within one business day to book your audit.";
-        status.classList.add("is-success");
-      } catch {
-        status.textContent = `Your request didn’t go through. Please try again, or email us at ${f.dataset.mailto}.`;
-        status.classList.add("is-error");
-      } finally {
-        submit.removeAttribute("aria-busy");
-        submit.disabled = false;
-      }
-    });
-  }
   return () => {};
 }

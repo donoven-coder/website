@@ -27,8 +27,10 @@ export function Hero() {
           <ul className="trust-row reveal-load" style={{ '--d': 4 } as React.CSSProperties}>
             <li><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M10 6v4.2l2.6 1.6"/></svg>15-minute Zoom call</li>
             <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m4.5 10.5 3.5 3.5 7.5-8"/></svg>No long-term contracts</li>
-            <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 18s-5.5-5.2-5.5-9.3a5.5 5.5 0 0 1 11 0C15.5 12.8 10 18 10 18Z"/><circle cx="10" cy="8.6" r="1.9"/></svg>Based in South Jersey</li>
           </ul>
+          <p className="trust-row trust-row-guarantee reveal-load" style={{ '--d': 5 } as React.CSSProperties}>
+            <span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5 4.2 4.7v4.6c0 3.9 2.5 6.9 5.8 8.2 3.3-1.3 5.8-4.3 5.8-8.2V4.7L10 2.5Z"/><path d="m7.4 10 1.8 1.8 3.4-3.5"/></svg>20 booked jobs in 60 days, guaranteed</span>
+          </p>
         </div>
 
         {/*
