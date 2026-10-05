@@ -1,32 +1,25 @@
 /* ==========================================================================
-   Fonts (self-hosted, SIL OFL 1.1 — see assets/fonts/)
+   Fonts (self-hosted, SIL OFL 1.1 — licenses in public/fonts/)
    ========================================================================== */
 @font-face {
   font-family: "Instrument Serif";
-  src: url("/assets/fonts/instrument-serif.woff2") format("woff2");
+  src: url("../assets/fonts/instrument-serif.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Instrument Serif";
-  src: url("/assets/fonts/instrument-serif-italic.woff2") format("woff2");
+  src: url("../assets/fonts/instrument-serif-italic.woff2") format("woff2");
   font-weight: 400;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
   font-family: "DM Sans";
-  src: url("/assets/fonts/dmsans.woff2") format("woff2");
-  font-weight: 300 800;
+  src: url("../assets/fonts/dmsans.woff2") format("woff2");
+  font-weight: 300 600;
   font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "DM Sans";
-  src: url("/assets/fonts/dmsans-italic.woff2") format("woff2");
-  font-weight: 400;
-  font-style: italic;
   font-display: swap;
 }
 
@@ -251,8 +244,8 @@ figure { margin: 0; }
   -webkit-mask: var(--logo) center / contain no-repeat;
   mask: var(--logo) center / contain no-repeat;
 }
-.brand-mark { --logo: url("/assets/brand/ossmark-mark.svg"); width: 34px; height: 31px; }
-.brand-word { --logo: url("/assets/brand/ossmark-wordmark.svg"); width: 158px; height: 8px; }
+.brand-mark { --logo: url("../assets/brand/ossmark-mark.svg"); width: 34px; height: 31px; }
+.brand-word { --logo: url("../assets/brand/ossmark-wordmark.svg"); width: 158px; height: 8px; }
 
 .site-nav { display: flex; align-items: center; gap: var(--space-4); }
 .site-nav ul { display: flex; gap: var(--space-3); }
@@ -646,7 +639,7 @@ summary::-webkit-details-marker { display: none; }
   overflow: hidden;
 }
 .founder-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.founder-photo-mark { --logo: url("/assets/brand/ossmark-lockup.svg"); width: 62%; aspect-ratio: 936 / 790; }
+.founder-photo-mark { --logo: url("../assets/brand/ossmark-lockup.svg"); width: 62%; aspect-ratio: 936 / 790; }
 .founder-role { margin-top: var(--space-1); color: var(--grey-600); font-size: var(--step--1); }
 .founder-story { margin-top: var(--space-4); display: grid; gap: var(--space-2); font-size: var(--step-1); line-height: 1.55; max-width: 36rem; }
 .founder-copy .btn { margin-top: var(--space-4); }
@@ -916,7 +909,7 @@ input::placeholder, textarea::placeholder { color: #767672; }
 .closer { background: var(--black); color: var(--white); padding-block: var(--space-7); overflow: hidden; }
 .closer-inner { display: grid; justify-items: center; text-align: center; gap: var(--space-4); }
 .closer-logo {
-  --logo: url("/assets/brand/ossmark-lockup.svg");
+  --logo: url("../assets/brand/ossmark-lockup.svg");
   width: min(420px, 78vw);
   aspect-ratio: 936 / 790;
 }
@@ -932,7 +925,7 @@ input::placeholder, textarea::placeholder { color: #767672; }
    ========================================================================== */
 .site-footer { background: var(--black); color: var(--on-dark-soft); border-top: 1px solid var(--line-dark); padding-top: var(--space-6); }
 .footer-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: var(--space-4); padding-bottom: var(--space-5); }
-.footer-word { --logo: url("/assets/brand/ossmark-wordmark.svg"); width: 190px; height: 9px; color: var(--white); margin-bottom: var(--space-2); }
+.footer-word { --logo: url("../assets/brand/ossmark-wordmark.svg"); width: 190px; height: 9px; color: var(--white); margin-bottom: var(--space-2); }
 .footer-head { font-weight: 600; color: var(--white); margin-bottom: 6px; }
 .footer-line { font-size: var(--step--1); line-height: 1.7; }
 .site-footer a { color: var(--white); text-underline-offset: 3px; }
@@ -1634,3 +1627,75 @@ select option { color: var(--ink); }
 }
 /* Keep the example answer readable on narrow phones (input text stays 16px, so iOS doesn't zoom) */
 @media (max-width: 420px) { .book-qualify input::placeholder { font-size: 0.875rem; } }
+
+/* ==========================================================================
+   Hero background (CSS-only Velaris, see components/ui/velaris.tsx)
+   Fields drift with transform only, so the compositor animates them off the
+   main thread. Paused off screen / in a hidden tab (.is-paused) and under
+   reduced motion.
+   ========================================================================== */
+.velaris-bg { position: absolute; inset: 0; pointer-events: none; }
+.velaris-bg > span { position: absolute; display: block; }
+.vl-f2 { z-index: 0; }
+.vl-f0, .vl-f1 { z-index: 1; }
+.vl-glow, .vl-vignette, .vl-grain { z-index: 2; }
+.vl-field {
+  border-radius: 50%;
+  will-change: transform;
+  animation: vl-drift calc(22s / var(--vl-speed, 1)) ease-in-out infinite alternate;
+}
+/* Field 1: the broad slate wash, upper left of center */
+.vl-f0 {
+  left: 4%; top: -18%; width: 88%; height: 84%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--vl-c0) 85%, transparent), color-mix(in srgb, var(--vl-c0) 40%, transparent) 55%, transparent);
+}
+/* Field 2: the cooler blue-grey light, right of center behind the headline */
+.vl-f1 {
+  left: 38%; top: -18%; width: 70%; height: 74%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--vl-c1) 85%, transparent), color-mix(in srgb, var(--vl-c1) 40%, transparent) 55%, transparent);
+  animation-name: vl-drift-b;
+  animation-duration: calc(28s / var(--vl-speed, 1));
+}
+/* Field 3: a broad charcoal wash that keeps the dark areas from going flat black */
+.vl-f2 {
+  left: -15%; top: -25%; width: 130%; height: 95%;
+  background: radial-gradient(closest-side, var(--vl-c2), color-mix(in srgb, var(--vl-c2) 70%, transparent) 60%, transparent);
+  animation-duration: calc(34s / var(--vl-speed, 1));
+  animation-direction: alternate-reverse;
+}
+/* Center glow, sized from the hero height as in the shader */
+.vl-glow {
+  inset: 0;
+  background: radial-gradient(circle calc(var(--vl-h, 1400px) * 0.53) at 50% 50%, color-mix(in srgb, var(--vl-c1) 18%, transparent), transparent);
+}
+/* Vignette: darkens toward the edges, from 0.2 to 0.8 of the hero height */
+.vl-vignette {
+  inset: 0;
+  background: radial-gradient(circle calc(var(--vl-h, 1400px) * 0.8) at 50% 50%,
+    transparent 25%, rgba(0, 0, 0, 0.18) 45%, rgba(0, 0, 0, 0.55) 70%, rgba(0, 0, 0, 0.8) 100%);
+}
+.vl-grain {
+  inset: 0;
+  background-image: var(--grain);
+  background-size: 160px 160px;
+  opacity: calc(var(--vl-grain, 0.3) * 0.55);
+  mix-blend-mode: screen;
+}
+@keyframes vl-drift {
+  from { transform: translate3d(-4%, -3%, 0) scale(1); }
+  to   { transform: translate3d(5%, 4%, 0) scale(1.08); }
+}
+@keyframes vl-drift-b {
+  from { transform: translate3d(4%, 2%, 0) scale(1.06); }
+  to   { transform: translate3d(-5%, -4%, 0) scale(0.96); }
+}
+/* Phones: the hero is tall and narrow, so the fields span the full width */
+@media (max-width: 760px) {
+  .vl-f0 { left: -45%; top: 4%; width: 190%; height: 44%; }
+  .vl-f1 { left: -40%; top: -18%; width: 200%; height: 54%; }
+  .vl-f2 { left: -40%; top: -10%; width: 180%; height: 110%; }
+}
+.velaris.is-paused .vl-field { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .vl-field { animation: none !important; }
+}

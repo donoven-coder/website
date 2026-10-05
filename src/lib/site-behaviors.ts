@@ -18,6 +18,22 @@ export function initSite(): () => void {
   const SVG_NS = "http://www.w3.org/2000/svg";
 
   /* ------------------------------------------------------------------
+     Layout cache: element positions are measured inside a ResizeObserver
+     callback (which runs right after layout, so reading never forces a
+     reflow) and reused by every scroll and pointer handler. Re-measured
+     whenever the page changes size (fonts, FAQ answers opening, rotation).
+     ------------------------------------------------------------------ */
+  type Box = { top: number; left: number; width: number; height: number };
+  const measurers: (() => void)[] = [];
+  const onMeasured: (() => void)[] = [];
+  const pageBox = (el: Element): Box => {
+    const r = el.getBoundingClientRect();
+    return { top: r.top + window.scrollY, left: r.left + window.scrollX, width: r.width, height: r.height };
+  };
+  const remeasure = () => { measurers.forEach((m) => m()); onMeasured.forEach((f) => f()); };
+  new ResizeObserver(remeasure).observe(document.body);
+
+  /* ------------------------------------------------------------------
      Placeholder review mode: add ?replace to the URL.
      ------------------------------------------------------------------ */
   if (new URLSearchParams(location.search).has("replace")) {
@@ -236,17 +252,22 @@ export function initSite(): () => void {
       // The line follows the scroll position continuously; each number lights (and
       // pulses once) the moment the line reaches it.
       let active = false, q = false;
+      let stepsTop = 0, firstTop = 0, lastTop = 0;
+      measurers.push(() => {
+        stepsTop = pageBox(steps).top;
+        firstTop = pageBox(nums[0]).top;
+        lastTop = pageBox(nums[nums.length - 1]).top;
+      });
+      onMeasured.push(() => queue());
       const paint = () => {
         q = false;
-        const r = steps.getBoundingClientRect();
-        const first = nums[0].getBoundingClientRect();
-        const last = nums[nums.length - 1].getBoundingClientRect();
+        const y = window.scrollY;
         let progress: number;
         if (vertical.matches) {
-          const span = last.top - first.top || 1;
-          progress = (window.innerHeight * 0.62 - first.top) / span;
+          const span = lastTop - firstTop || 1;
+          progress = (window.innerHeight * 0.62 - (firstTop - y)) / span;
         } else {
-          progress = (window.innerHeight * 0.85 - r.top) / (window.innerHeight * 0.45);
+          progress = (window.innerHeight * 0.85 - (stepsTop - y)) / (window.innerHeight * 0.45);
         }
         progress = Math.min(1, Math.max(0, progress));
         steps.style.setProperty("--progress", progress.toFixed(4));
@@ -258,7 +279,6 @@ export function initSite(): () => void {
       const queue = () => { if (active && !q) { q = true; requestAnimationFrame(paint); } };
       new IntersectionObserver(([e]) => { active = e.isIntersecting; queue(); }, { rootMargin: "20% 0px" }).observe(steps);
       window.addEventListener("scroll", queue, { passive: true });
-      window.addEventListener("resize", queue, { passive: true });
     }
   }
 
@@ -326,12 +346,18 @@ export function initSite(): () => void {
       let active = false;
       let queued = false;
       let lastLit = -1;
+      let box: Box | null = null;
+      measurers.push(() => { box = pageBox(stance); });
+      // Paint as soon as positions are known, so the words are already at their
+      // scroll-correct brightness before the section comes into view.
+      onMeasured.push(() => { lastLit = -1; paint(); });
       const paint = () => {
         queued = false;
-        const r = stance.getBoundingClientRect();
+        if (!box) return;
         const vh = window.innerHeight;
+        const top = box.top - window.scrollY;
         // Starts when the text reaches 85% down the screen, finishes as its end passes 45%.
-        const progress = Math.min(1, Math.max(0, (vh * 0.85 - r.top) / (vh * 0.4 + r.height)));
+        const progress = Math.min(1, Math.max(0, (vh * 0.85 - top) / (vh * 0.4 + box.height)));
         const lit = progress * words.length;
         if (Math.abs(lit - lastLit) < 0.02) return;
         lastLit = lit;
@@ -343,8 +369,6 @@ export function initSite(): () => void {
       const queue = () => { if (active && !queued) { queued = true; requestAnimationFrame(paint); } };
       new IntersectionObserver(([e]) => { active = e.isIntersecting; queue(); }).observe(stance);
       window.addEventListener("scroll", queue, { passive: true });
-      window.addEventListener("resize", queue, { passive: true });
-      paint();
     }
   }
 
@@ -378,9 +402,10 @@ export function initSite(): () => void {
       heroLight.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
     });
     const lightParent = heroLight.parentElement ?? heroSection;
+    let lp: Box | null = null;
+    measurers.push(() => { lp = pageBox(lightParent); });
     heroSection.addEventListener("pointermove", (e) => {
-      const r = lightParent.getBoundingClientRect();
-      moveLight(e.clientX - r.left, e.clientY - r.top);
+      if (lp) moveLight(e.pageX - lp.left, e.pageY - lp.top);
     }, { passive: true });
     heroSection.addEventListener("pointerenter", () => heroLight.classList.add("is-lit"));
     heroSection.addEventListener("pointerleave", () => heroLight.classList.remove("is-lit"));
@@ -404,24 +429,32 @@ export function initSite(): () => void {
         photo.style.setProperty("--sy", `${(50 + y * 60).toFixed(1)}%`);
       });
       const zone = photo.closest<HTMLElement>(".founder") ?? photo;
+      let pb: Box | null = null;
+      measurers.push(() => { pb = pageBox(photo); });
       zone.addEventListener("pointermove", (e) => {
-        const r = photo.getBoundingClientRect();
-        const nx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / r.width));
-        const ny = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / r.height));
+        if (!pb) return;
+        const nx = Math.max(-1, Math.min(1, (e.pageX - (pb.left + pb.width / 2)) / pb.width));
+        const ny = Math.max(-1, Math.min(1, (e.pageY - (pb.top + pb.height / 2)) / pb.height));
         tilt(nx, ny);
       }, { passive: true });
       zone.addEventListener("pointerenter", () => photo.classList.add("is-tilting"));
       zone.addEventListener("pointerleave", () => { photo.classList.remove("is-tilting"); tilt(0, 0); });
     } else {
       let q = false;
+      let pb: Box | null = null;
+      // The drift itself moves the photo (--ty), so measure it without that offset.
+      measurers.push(() => { const b = pageBox(photo); pb = { ...b, top: b.top - (parseFloat(photo.style.getPropertyValue("--ty")) || 0) }; });
+      onMeasured.push(() => drift());
       const drift = () => {
         q = false;
-        const r = photo.getBoundingClientRect();
-        const p = (r.top + r.height / 2) / window.innerHeight - 0.5;
+        if (!pb) return;
+        const p = (pb.top - window.scrollY + pb.height / 2) / window.innerHeight - 0.5;
         photo.style.setProperty("--ty", `${(p * -18).toFixed(1)}px`);
       };
-      window.addEventListener("scroll", () => { if (!q) { q = true; requestAnimationFrame(drift); } }, { passive: true });
-      drift();
+      // Only while the photo is on screen.
+      let inView = false;
+      new IntersectionObserver(([e]) => { inView = e.isIntersecting; }, { rootMargin: "10% 0px" }).observe(photo);
+      window.addEventListener("scroll", () => { if (inView && !q) { q = true; requestAnimationFrame(drift); } }, { passive: true });
     }
   }
 
@@ -465,17 +498,20 @@ export function initSite(): () => void {
     const zone = chipList.closest<HTMLElement>(".local") ?? chipList;
     if (canHover) {
       let px = -9999, py = -9999, q = false;
+      let boxes: Box[] = [];
+      measurers.push(() => { boxes = chips.map(pageBox); });
       const paint = () => {
         q = false;
-        chips.forEach((c) => {
-          const r = c.getBoundingClientRect();
-          const dx = Math.max(r.left - px, 0, px - r.right);
-          const dy = Math.max(r.top - py, 0, py - r.bottom);
+        chips.forEach((c, i) => {
+          const r = boxes[i];
+          if (!r) return;
+          const dx = Math.max(r.left - px, 0, px - (r.left + r.width));
+          const dy = Math.max(r.top - py, 0, py - (r.top + r.height));
           const near = Math.max(0, 1 - Math.hypot(dx, dy) / 180);
           c.style.setProperty("--near", near.toFixed(3));
         });
       };
-      zone.addEventListener("pointermove", (e) => { px = e.clientX; py = e.clientY; if (!q) { q = true; requestAnimationFrame(paint); } }, { passive: true });
+      zone.addEventListener("pointermove", (e) => { px = e.pageX; py = e.pageY; if (!q) { q = true; requestAnimationFrame(paint); } }, { passive: true });
       zone.addEventListener("pointerleave", () => { px = py = -9999; paint(); });
     } else if ("IntersectionObserver" in window) {
       chips.forEach((c, i) => c.style.setProperty("--i", String(i)));
@@ -501,9 +537,10 @@ export function initSite(): () => void {
     const drift = follow(0.06, (x, y) => {
       closerLogo.style.transform = `translate3d(${(x * 14).toFixed(2)}px, ${(y * 10).toFixed(2)}px, 0)`;
     });
+    let cb: Box | null = null;
+    measurers.push(() => { cb = pageBox(closerSection); });
     closerSection.addEventListener("pointermove", (e) => {
-      const r = closerSection.getBoundingClientRect();
-      drift((e.clientX - r.left) / r.width - 0.5, (e.clientY - r.top) / r.height - 0.5);
+      if (cb) drift((e.pageX - cb.left) / cb.width - 0.5, (e.pageY - cb.top) / cb.height - 0.5);
     }, { passive: true });
     closerSection.addEventListener("pointerleave", () => drift(0, 0));
   }
@@ -536,10 +573,13 @@ export function initSite(): () => void {
   if (finePointer.matches && !reduceMotion.matches) {
     document.querySelectorAll<HTMLElement>(".btn-lg, .closer .btn, .hero-media .btn").forEach((btn) => {
       btn.classList.add("btn-magnetic");
+      // Measured once as the pointer arrives (not on every move), in page coordinates.
+      let r: Box | null = null;
+      btn.addEventListener("pointerenter", () => { r = pageBox(btn); });
       btn.addEventListener("pointermove", (e) => {
-        const r = btn.getBoundingClientRect();
-        const dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
-        const dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+        if (!r) return;
+        const dx = (e.pageX - (r.left + r.width / 2)) / (r.width / 2);
+        const dy = (e.pageY - (r.top + r.height / 2)) / (r.height / 2);
         btn.style.transform = `translate(${(dx * 6).toFixed(1)}px, ${(dy * 4).toFixed(1)}px)`;
       });
       btn.addEventListener("pointerleave", () => { btn.style.transform = ""; });
@@ -551,15 +591,17 @@ export function initSite(): () => void {
      ------------------------------------------------------------------ */
   if (header) {
     let ticking = false;
+    let pageHeight = 0;
+    measurers.push(() => { pageHeight = document.documentElement.scrollHeight; });
+    onMeasured.push(() => updateProgress());
     const updateProgress = () => {
       ticking = false;
-      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const max = pageHeight - window.innerHeight;
       header.style.setProperty("--scroll", max > 0 ? (window.scrollY / max).toFixed(4) : "0");
     };
     window.addEventListener("scroll", () => {
       if (!ticking) { ticking = true; requestAnimationFrame(updateProgress); }
     }, { passive: true });
-    updateProgress();
   }
 
   /* ------------------------------------------------------------------
@@ -604,7 +646,7 @@ export function initSite(): () => void {
 
   /* ------------------------------------------------------------------
      Booking: a short qualifier unlocks the Cal.com calendar (official embed.js).
-     The script preloads when the visitor heads for it; the calendar itself
+     The script loads when the visitor starts the qualifier; the calendar itself
      mounts on submit, with the answers prefilled as booking notes + metadata.
      Booking link: data-cal-link on the calendar frame.
      ------------------------------------------------------------------ */
@@ -680,14 +722,14 @@ export function initSite(): () => void {
       return api;
     };
 
-    // Preload embed.js when the booking section is near, or when someone clicks a "Book" link.
-    if ("IntersectionObserver" in window) {
-      const calIO = new IntersectionObserver(([e]) => { if (e.isIntersecting) { getApi(); calIO.disconnect(); } }, { rootMargin: "800px 0px" });
-      calIO.observe(cal);
-    } else {
+    // Load embed.js only once the visitor starts the qualifier (first focus, tap or change on
+    // any field). Two dropdowns take long enough that it's ready by "Show open times";
+    // mountCalendar() calls getApi() too, so a submit without touching a field still works.
+    const warm = () => {
       getApi();
-    }
-    document.addEventListener("click", (e) => { if ((e.target as Element).closest('a[href="#book"]')) getApi(); });
+      ["focusin", "pointerdown", "change"].forEach((t) => qualify.removeEventListener(t, warm));
+    };
+    ["focusin", "pointerdown", "change"].forEach((t) => qualify.addEventListener(t, warm, { passive: true }));
 
     // Prefill for Cal: "notes" fills the booking's Additional notes; metadata[...] is stored on the booking.
     const prefill = (a: QualifierAnswers): Record<string, string> => {
