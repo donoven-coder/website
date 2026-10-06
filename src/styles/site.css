@@ -1,80 +1,4 @@
-/* ==========================================================================
-   Fonts (self-hosted, SIL OFL 1.1 — licenses in public/fonts/)
-   ========================================================================== */
-@font-face {
-  font-family: "Instrument Serif";
-  src: url("../assets/fonts/instrument-serif.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Instrument Serif";
-  src: url("../assets/fonts/instrument-serif-italic.woff2") format("woff2");
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "DM Sans";
-  src: url("../assets/fonts/dmsans.woff2") format("woff2");
-  font-weight: 300 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* ==========================================================================
-   Tokens — monochrome, taken from the Ossmark Media logo
-   ========================================================================== */
-:root {
-  color-scheme: light;
-
-  --white: #FFFFFF;
-  --paper: #F5F5F2;      /* soft section background */
-  --black: #000000;      /* logo black: buttons, dark sections */
-  --ink: #141414;        /* body text */
-  --grey-700: #3B3B3B;
-  --grey-600: #5C5C5C;   /* secondary text: 6.6:1 on white */
-  --grey-400: #9A9A9A;
-  --line: #DEDEDA;
-  --line-dark: rgba(255, 255, 255, 0.16);
-  --on-dark: #F4F4F1;
-  --on-dark-soft: #A9A9A6; /* 8:1 on black */
-  --sky: #A8D8FF;        /* accent: fills, lines and text on dark; never text on white */
-  --sky-strong: #7CC2FA; /* hover state for sky fills */
-  --sky-tint: #E8F4FF;   /* soft sky wash on light surfaces */
-  --signal: var(--sky);  /* live/active marks (map pulses, hub) */
-  --danger: #B42318;
-
-  --serif: "Instrument Serif", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  --sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-
-  --step--1: clamp(0.875rem, 0.85rem + 0.1vw, 0.9375rem);
-  --step-0: clamp(1rem, 0.97rem + 0.15vw, 1.0625rem);
-  --step-1: clamp(1.15rem, 1.08rem + 0.35vw, 1.35rem);
-  --step-2: clamp(1.45rem, 1.3rem + 0.7vw, 1.85rem);
-  --step-3: clamp(2.3rem, 1.8rem + 2.4vw, 3.8rem);
-  --step-4: clamp(2.9rem, 1.9rem + 5vw, 6.6rem);
-
-  --space-1: 0.5rem;
-  --space-2: 1rem;
-  --space-3: 1.5rem;
-  --space-4: 2rem;
-  --space-5: 3rem;
-  --space-6: 4.5rem;
-  --space-7: clamp(4.5rem, 3rem + 6vw, 8.5rem);
-
-  --radius: 14px;
-  --radius-lg: 28px;
-
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --dur-fast: 160ms;
-  --dur: 300ms;
-  --dur-slow: 1000ms;
-
-  --header-h: 72px;
-  --wrap: 1200px;
-}
+@import "./tokens.css";
 
 /* ==========================================================================
    Base
@@ -1705,3 +1629,6 @@ select option { color: var(--ink); }
 @media (prefers-reduced-motion: reduce) {
   .vl-field { animation: none !important; }
 }
+
+/* Qualifier spam trap: off screen, never shown to people (see App.tsx) */
+.hp-field { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }

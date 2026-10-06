@@ -3,6 +3,15 @@
 import { StrictMode } from "react";
 import { renderToString } from "react-dom/server";
 import App from "./App";
+import { Booked } from "./booked/Booked";
+
+export function renderBooked(): string {
+  return renderToString(
+    <StrictMode>
+      <Booked />
+    </StrictMode>,
+  );
+}
 
 export function render(): string {
   return renderToString(

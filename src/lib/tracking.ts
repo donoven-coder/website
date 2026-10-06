@@ -60,7 +60,7 @@ export type QualifierAnswers = {
   trade: string;
   ad_budget: string;
   goal: string;
-  /** "good" or "review" (Other home service, or under $1,000 a month in ads) */
+  /** "ok" or "review" (Other home service, or monthly ad spend below FIT_REVIEW_THRESHOLD; see qualifier.ts) */
   fit: string;
 };
 

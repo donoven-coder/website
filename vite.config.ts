@@ -43,4 +43,16 @@ export default defineConfig({
   resolve: {
     alias: { "@": path.resolve(import.meta.dirname, "src") },
   },
+  build: {
+    // Every supported browser has native modulepreload; skipping Vite's polyfill also avoids a
+    // tiny shared chunk between the two pages, so the homepage stays a single script.
+    modulePreload: { polyfill: false },
+    // Two pages, each with its own small entry: the homepage and the /booked confirmation page.
+    rollupOptions: {
+      input: {
+        main: path.resolve(import.meta.dirname, "index.html"),
+        booked: path.resolve(import.meta.dirname, "booked.html"),
+      },
+    },
+  },
 });

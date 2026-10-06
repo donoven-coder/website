@@ -1,0 +1,73 @@
+/* /booked confirmation page. Light, small, and independent of the homepage stylesheet. */
+@import "./tokens.css";
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(80% 40% at 50% 0%, rgba(255, 255, 255, 0.9) 0%, transparent 70%),
+    var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2 { margin: 0; text-wrap: balance; }
+p, ul { margin: 0; }
+ul { padding: 0; list-style: none; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 4px; }
+
+/* Header: logo only, linking home */
+.bk-top { max-width: 44rem; margin: 0 auto; padding: 28px clamp(16px, 4vw, 40px) 0; }
+.bk-brand { display: inline-flex; align-items: center; gap: 14px; min-height: 44px; color: var(--black); text-decoration: none; }
+.bk-mark, .bk-word {
+  display: block;
+  background: currentColor;
+  -webkit-mask: var(--logo) center / contain no-repeat;
+  mask: var(--logo) center / contain no-repeat;
+}
+.bk-mark { --logo: url("../assets/brand/ossmark-mark.svg"); width: 34px; height: 31px; }
+.bk-word { --logo: url("../assets/brand/ossmark-wordmark.svg"); width: 158px; height: 8px; }
+
+.bk { max-width: 44rem; margin: 0 auto; padding: clamp(2.5rem, 1rem + 5vw, 5rem) clamp(16px, 4vw, 40px) var(--space-7); }
+
+.bk-title { font-family: var(--serif); font-weight: 400; font-size: var(--step-4); line-height: 0.98; letter-spacing: -0.015em; }
+.bk-sub { margin-top: 0.3em; font-family: var(--serif); font-style: italic; font-size: var(--step-3); line-height: 1.05; color: var(--grey-600); }
+
+/* "Your call" card */
+.bk-card {
+  margin-top: var(--space-5);
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  box-shadow: 0 0 0 1px var(--line), 0 40px 80px -60px rgba(0, 0, 0, 0.45);
+}
+.bk-label { display: flex; align-items: center; gap: 10px; font-size: var(--step--1); font-weight: 600; color: var(--grey-700); }
+.bk-label::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--sky); box-shadow: 0 0 0 4px var(--sky-tint); flex: none; }
+.bk-call { margin-top: var(--space-2); }
+.bk-call li { padding: 12px 0; border-top: 1px solid var(--line); color: var(--grey-600); }
+.bk-call li:first-child { border-top: 0; padding-top: 4px; }
+.bk-when { font-family: var(--serif); font-size: var(--step-2); line-height: 1.15; color: var(--ink) !important; }
+
+/* "Before the call" */
+.bk-prep, .bk-video { margin-top: var(--space-6); }
+.bk-h2 { font-family: var(--serif); font-weight: 400; font-size: var(--step-3); line-height: 1.02; letter-spacing: -0.01em; }
+.bk-prep ul { margin-top: var(--space-3); display: grid; gap: var(--space-2); }
+.bk-prep li { position: relative; padding-left: 28px; font-size: var(--step-1); line-height: 1.5; color: var(--grey-700); }
+.bk-prep li::before {
+  content: ""; position: absolute; left: 2px; top: 0.62em;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--sky); box-shadow: 0 0 0 4px var(--sky-tint);
+}
+
+/* Video: poster button until clicked */
+.bk-video-frame { margin-top: var(--space-3); aspect-ratio: 16 / 9; border-radius: var(--radius-lg); overflow: hidden; background: var(--black); box-shadow: 0 0 0 1px var(--line); }
+.bk-video-frame iframe { display: block; width: 100%; height: 100%; border: 0; }
+.bk-video-poster { display: block; width: 100%; height: 100%; padding: 0; border: 0; background: none; cursor: pointer; }
+.bk-video-poster img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.bk-small { margin-top: var(--space-6); font-size: var(--step--1); color: var(--grey-600); }
+.bk-small a { color: var(--ink); font-weight: 600; text-underline-offset: 3px; }

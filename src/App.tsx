@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Hero } from "@/components/sections/hero";
 import { Services } from "@/components/sections/services";
 import { initSite } from "@/lib/site-behaviors";
+import { BUDGETS, LIMITS, TRADES } from "@/lib/qualifier";
 
 export default function App() {
   // Map, scroll reveals, sticky booking bar, booking qualifier + Cal.com embed and mobile menu.
@@ -290,15 +291,7 @@ export default function App() {
                       <label htmlFor="q-trade">What’s your trade? <span className="req" aria-hidden="true">*</span></label>
                       <select id="q-trade" name="trade" required aria-describedby="q-trade-err" defaultValue="">
                         <option value="" disabled>Choose one</option>
-                        <option>HVAC</option>
-                        <option>Plumbing</option>
-                        <option>Roofing</option>
-                        <option>Electrical</option>
-                        <option>Remodeling &amp; general contracting</option>
-                        <option>Landscaping &amp; hardscaping</option>
-                        <option>Pest control</option>
-                        <option>Exterior cleaning &amp; pressure washing</option>
-                        <option>Other home service</option>
+                        {TRADES.map((t) => <option key={t}>{t}</option>)}
                       </select>
                       <p className="field-error" id="q-trade-err" aria-live="polite"></p>
                     </div>
@@ -306,17 +299,28 @@ export default function App() {
                       <label htmlFor="q-budget">What are you putting into ads each month? <span className="req" aria-hidden="true">*</span></label>
                       <select id="q-budget" name="ad_budget" required aria-describedby="q-budget-err" defaultValue="">
                         <option value="" disabled>Choose one</option>
-                        <option>Not running ads yet</option>
-                        <option>Under $1,000</option>
-                        <option>$1,000–$2,500</option>
-                        <option>$2,500–$5,000</option>
-                        <option>$5,000+</option>
+                        {BUDGETS.map((b) => <option key={b.label}>{b.label}</option>)}
                       </select>
                       <p className="field-error" id="q-budget-err" aria-live="polite"></p>
                     </div>
                     <div className="field">
+                      <label htmlFor="q-business">Business name <span className="req" aria-hidden="true">*</span></label>
+                      <input id="q-business" name="business" type="text" autoComplete="organization" required maxLength={LIMITS.business} aria-describedby="q-business-err" />
+                      <p className="field-error" id="q-business-err" aria-live="polite"></p>
+                    </div>
+                    <div className="field">
+                      <label htmlFor="q-phone">Best phone number <span className="req" aria-hidden="true">*</span></label>
+                      <input id="q-phone" name="phone" type="tel" autoComplete="tel" inputMode="tel" required maxLength={LIMITS.phone} aria-describedby="q-phone-err" />
+                      <p className="field-error" id="q-phone-err" aria-live="polite"></p>
+                    </div>
+                    <div className="field">
                       <label htmlFor="q-goal">What would you like more of?</label>
-                      <input id="q-goal" name="goal" type="text" placeholder="More AC replacement calls in Cherry Hill" />
+                      <input id="q-goal" name="goal" type="text" maxLength={LIMITS.goal} placeholder="More AC replacement calls in Cherry Hill" />
+                    </div>
+                    {/* Spam trap: hidden from people and screen readers; bots that fill it are dropped server-side */}
+                    <div className="hp-field" aria-hidden="true">
+                      <label htmlFor="q-company-website">Company website</label>
+                      <input id="q-company-website" name="company_website" type="text" tabIndex={-1} autoComplete="off" />
                     </div>
                     <button className="btn btn-dark btn-block" type="submit">Show open times</button>
                     <p className="visually-hidden" role="status" aria-live="polite" data-qualify-status></p>

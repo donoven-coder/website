@@ -3,6 +3,8 @@
 // Runs once after React has rendered the page (see App.tsx).
 
 import { trackLead, trackSchedule, type QualifierAnswers } from "@/lib/tracking";
+import { fitFor, isPhone, LIMITS } from "@/lib/qualifier";
+import { captureAttribution, readAttribution } from "@/lib/attribution";
 
 let initialized = false;
 
@@ -10,9 +12,15 @@ let initialized = false;
 // third-party frames, so the Cal.com calendar links out instead of embedding.
 const isPreview = () => Boolean((window as unknown as { OSSMARK_PREVIEW?: boolean }).OSSMARK_PREVIEW);
 
+const newLeadId = () => {
+  try { if (crypto.randomUUID) return crypto.randomUUID(); } catch { /* fall through */ }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+};
+
 export function initSite(): () => void {
   if (initialized) return () => {};
   initialized = true;
+  captureAttribution();
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const SVG_NS = "http://www.w3.org/2000/svg";
@@ -672,7 +680,10 @@ export function initSite(): () => void {
     const booked = document.querySelector("[data-booked]");
     const direct = cal.querySelector<HTMLAnchorElement>("[data-cal-direct]");
     let answers: QualifierAnswers | null = null;
+    // Contact details stay out of the pixel and out of page URLs (see prefill below).
+    let contact: { business: string; phone: string; leadId: string } | null = null;
     let leadSent = false;
+    let redirecting = false;
     let scriptFailed = false;
     let scheduleSent = false;
     let api: ((...args: unknown[]) => void) | null = null;
@@ -727,9 +738,10 @@ export function initSite(): () => void {
       nsApi("on", { action: "linkReady", callback: () => cal.classList.add("is-loaded") });
       nsApi("on", { action: "linkFailed", callback: () => cal.classList.add("is-failed") });
       // Schedule fires only on a completed booking (both event names exist across embed versions).
-      const onBooked = () => {
+      const onBooked = (e?: { detail?: { data?: BookingData } }) => {
         if (booked) booked.textContent = "You’re booked. Check your email for the confirmation and meeting details.";
         if (!scheduleSent) { scheduleSent = true; trackSchedule(answers); }
+        goToConfirmation(e?.detail?.data);
       };
       nsApi("on", { action: "bookingSuccessfulV2", callback: onBooked });
       nsApi("on", { action: "bookingSuccessful", callback: onBooked });
@@ -747,9 +759,13 @@ export function initSite(): () => void {
     ["focusin", "pointerdown", "change"].forEach((t) => qualify.addEventListener(t, warm, { passive: true }));
 
     // Prefill for Cal: "notes" fills the booking's Additional notes; metadata[...] is stored on the booking.
-    const prefill = (a: QualifierAnswers): Record<string, string> => {
+    // Business name and phone go into the embedded calendar's notes only (by request); they are
+    // left out of the fallback link-out, which opens as a visible URL in a new tab.
+    const prefill = (a: QualifierAnswers, withContact: boolean): Record<string, string> => {
       const notes = [
         a.fit === "review" ? "[Review fit]" : "",
+        withContact && contact ? `Business: ${contact.business}` : "",
+        withContact && contact ? `Phone: ${contact.phone}` : "",
         `Trade: ${a.trade}`,
         `Monthly ad spend: ${a.ad_budget}`,
         a.goal ? `Wants more of: ${a.goal}` : "",
@@ -760,14 +776,15 @@ export function initSite(): () => void {
         "metadata[ad_budget]": a.ad_budget,
         "metadata[goal]": a.goal || "-",
         "metadata[fit]": a.fit,
+        ...(contact ? { "metadata[lead_id]": contact.leadId } : {}),
       };
     };
 
     const mountCalendar = (a: QualifierAnswers) => {
-      const fields = prefill(a);
+      const fields = prefill(a, true);
       if (direct) {
         const url = new URL("https://cal.com/" + calLink);
-        Object.entries(fields).forEach(([k, v]) => url.searchParams.set(k, v));
+        Object.entries(prefill(a, false)).forEach(([k, v]) => url.searchParams.set(k, v));
         direct.href = url.toString();
       }
       cal.classList.remove("is-locked", "is-loaded", "is-failed");
@@ -789,41 +806,96 @@ export function initSite(): () => void {
     };
 
     const status = qualify.querySelector<HTMLElement>("[data-qualify-status]")!;
-    const required = [...qualify.querySelectorAll<HTMLSelectElement>("select[required]")];
-    const errorFor: Record<string, string> = { trade: "Choose your trade.", ad_budget: "Choose your monthly ad spend." };
-    const validate = (sel: HTMLSelectElement) => {
-      const msg = sel.value ? "" : errorFor[sel.name];
-      sel.closest(".field")!.classList.toggle("has-error", Boolean(msg));
-      sel.setAttribute("aria-invalid", msg ? "true" : "false");
-      const err = qualify.querySelector(`#${sel.id}-err`);
+    const required = [...qualify.querySelectorAll<HTMLInputElement | HTMLSelectElement>("[required]")];
+    const check: Record<string, (v: string) => string> = {
+      trade: (v) => (v ? "" : "Choose your trade."),
+      ad_budget: (v) => (v ? "" : "Choose your monthly ad spend."),
+      business: (v) => (v.trim() ? "" : "Enter your business name."),
+      phone: (v) => (!v.trim() ? "Enter your best phone number." : isPhone(v) ? "" : "Enter a phone number like 856-555-0123."),
+    };
+    const validate = (el: HTMLInputElement | HTMLSelectElement) => {
+      const msg = check[el.name]?.(el.value) ?? "";
+      el.closest(".field")!.classList.toggle("has-error", Boolean(msg));
+      el.setAttribute("aria-invalid", msg ? "true" : "false");
+      const err = qualify.querySelector(`#${el.id}-err`);
       if (err) err.textContent = msg;
       return msg;
     };
-    required.forEach((sel) => sel.addEventListener("change", () => validate(sel)));
+    required.forEach((el) => {
+      el.addEventListener("change", () => validate(el));
+      // Text fields re-check as you type once they've been flagged.
+      el.addEventListener("input", () => { if (el.getAttribute("aria-invalid") === "true") validate(el); });
+    });
+
+    // Saves the lead (Notion + Slack) in the background. The calendar never waits on it.
+    const sendLead = (payload: Record<string, unknown>) => {
+      if (isPreview()) return;
+      try {
+        void fetch("/api/lead", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          keepalive: true,
+          signal: AbortSignal.timeout(4000),
+        }).catch(() => {});
+      } catch { /* never let lead capture break booking */ }
+    };
 
     qualify.addEventListener("submit", (e) => {
       e.preventDefault();
-      const invalid = required.filter((sel) => validate(sel));
+      const invalid = required.filter((el) => validate(el));
       if (invalid.length) { invalid[0].focus(); return; }
 
       const data = new FormData(qualify);
       const trade = String(data.get("trade"));
       const adBudget = String(data.get("ad_budget"));
+      const goal = String(data.get("goal") ?? "").trim().slice(0, LIMITS.goal);
       answers = {
         trade,
         ad_budget: adBudget,
-        goal: String(data.get("goal") ?? "").trim(),
+        goal,
         // Nobody is turned away; these bookings are just tagged for a closer look.
-        fit: trade === "Other home service" || adBudget === "Under $1,000" ? "review" : "good",
+        fit: fitFor(trade, adBudget),
+      };
+      // One lead ID per visit: re-submitting (e.g. changing an answer) updates the same lead.
+      contact = {
+        business: String(data.get("business")).trim().slice(0, LIMITS.business),
+        phone: String(data.get("phone")).trim().slice(0, LIMITS.phone),
+        leadId: contact?.leadId ?? newLeadId(),
       };
       if (!leadSent) { leadSent = true; trackLead(answers); }
       mountCalendar(answers);
+      sendLead({ lead_id: contact.leadId, ...answers, business: contact.business, phone: contact.phone,
+        company_website: String(data.get("company_website") ?? ""), ...readAttribution() });
       status.textContent = "Open times are showing in the calendar.";
       // On phones the calendar sits below the questions; bring it into view.
       if (window.matchMedia("(max-width: 960px)").matches) {
         cal.scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" });
       }
     });
+
+    // After a booking: keep the time and uid in sessionStorage (never the URL), give the
+    // Schedule pixel request a moment to leave (up to 800ms), then open the confirmation page.
+    type BookingData = { uid?: string; startTime?: string; booking?: { uid?: string; startTime?: string } };
+    const goToConfirmation = (d?: BookingData) => {
+      if (redirecting || isPreview()) return;
+      redirecting = true;
+      try {
+        const uid = d?.uid ?? d?.booking?.uid ?? "";
+        const startTime = d?.startTime ?? d?.booking?.startTime ?? "";
+        sessionStorage.setItem("ossmark:booking", JSON.stringify({ uid, startTime }));
+      } catch { /* the page falls back to "check your email" */ }
+      let done = false;
+      const go = () => { if (!done) { done = true; window.location.assign("/booked"); } };
+      const sent = () => performance.getEntriesByType("resource").some((r) => /facebook\.com\/tr\/?\?.*ev=Schedule/.test(r.name));
+      if (sent()) return go();
+      try {
+        new PerformanceObserver((list, obs) => {
+          if (list.getEntries().some((r) => /facebook\.com\/tr\/?\?.*ev=Schedule/.test(r.name))) { obs.disconnect(); go(); }
+        }).observe({ type: "resource" });
+      } catch { /* no observer: rely on the timeout */ }
+      window.setTimeout(go, 800);
+    };
   }
 
   /* ------------------------------------------------------------------

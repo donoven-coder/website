@@ -5,15 +5,16 @@ import { pathToFileURL } from "node:url";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
-const htmlPath = path.join(root, "dist/index.html");
 const ssrDir = path.join(root, "dist-ssr");
-
-const { render } = await import(pathToFileURL(path.join(ssrDir, "entry-server.js")).href);
-const html = await readFile(htmlPath, "utf8");
 const marker = '<div id="root"></div>';
-if (!html.includes(marker)) throw new Error(`prerender: ${marker} not found in dist/index.html`);
 
-const appHtml = render();
-await writeFile(htmlPath, html.replace(marker, `<div id="root">${appHtml}</div>`));
+const { render, renderBooked } = await import(pathToFileURL(path.join(ssrDir, "entry-server.js")).href);
+for (const [file, renderPage] of [["index.html", render], ["booked.html", renderBooked]]) {
+  const htmlPath = path.join(root, "dist", file);
+  const html = await readFile(htmlPath, "utf8");
+  if (!html.includes(marker)) throw new Error(`prerender: ${marker} not found in dist/${file}`);
+  const appHtml = renderPage();
+  await writeFile(htmlPath, html.replace(marker, `<div id="root">${appHtml}</div>`));
+  console.log(`prerender: wrote ${appHtml.length.toLocaleString()} characters of HTML into dist/${file}`);
+}
 await rm(ssrDir, { recursive: true, force: true });
-console.log(`prerender: wrote ${appHtml.length.toLocaleString()} characters of HTML into dist/index.html`);
