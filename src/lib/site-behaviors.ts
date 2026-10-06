@@ -252,6 +252,9 @@ export function initSite(): () => void {
       // The line follows the scroll position continuously; each number lights (and
       // pulses once) the moment the line reaches it.
       let active = false, q = false;
+      // Arriving through a "How it works" link fills the line and lights every step;
+      // scroll-linked behavior resumes as soon as the visitor scrolls themselves.
+      let arrivedByLink = false;
       let stepsTop = 0, firstTop = 0, lastTop = 0;
       measurers.push(() => {
         stepsTop = pageBox(steps).top;
@@ -263,7 +266,9 @@ export function initSite(): () => void {
         q = false;
         const y = window.scrollY;
         let progress: number;
-        if (vertical.matches) {
+        if (arrivedByLink) {
+          progress = 1;
+        } else if (vertical.matches) {
           const span = lastTop - firstTop || 1;
           progress = (window.innerHeight * 0.62 - (firstTop - y)) / span;
         } else {
@@ -279,6 +284,15 @@ export function initSite(): () => void {
       const queue = () => { if (active && !q) { q = true; requestAnimationFrame(paint); } };
       new IntersectionObserver(([e]) => { active = e.isIntersecting; queue(); }, { rootMargin: "20% 0px" }).observe(steps);
       window.addEventListener("scroll", queue, { passive: true });
+
+      document.addEventListener("click", (e) => {
+        if ((e.target as Element).closest('a[href="#process"]')) { arrivedByLink = true; queue(); }
+      });
+      const SCROLL_KEYS = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "]);
+      const release = () => { if (arrivedByLink) { arrivedByLink = false; queue(); } };
+      window.addEventListener("wheel", release, { passive: true });
+      window.addEventListener("touchmove", release, { passive: true });
+      window.addEventListener("keydown", (e) => { if (SCROLL_KEYS.has(e.key)) release(); });
     }
   }
 
@@ -659,6 +673,7 @@ export function initSite(): () => void {
     const direct = cal.querySelector<HTMLAnchorElement>("[data-cal-direct]");
     let answers: QualifierAnswers | null = null;
     let leadSent = false;
+    let scriptFailed = false;
     let scheduleSent = false;
     let api: ((...args: unknown[]) => void) | null = null;
 
@@ -677,7 +692,7 @@ export function initSite(): () => void {
             const script = document.createElement("script");
             script.src = "https://app.cal.com/embed/embed.js";
             script.async = true;
-            script.addEventListener("error", () => cal.classList.add("is-failed"));
+            script.addEventListener("error", () => { scriptFailed = true; cal.classList.add("is-failed"); });
             document.head.appendChild(script);
             c.loaded = true;
           }
@@ -756,6 +771,8 @@ export function initSite(): () => void {
         direct.href = url.toString();
       }
       cal.classList.remove("is-locked", "is-loaded", "is-failed");
+      // The script already failed to load (it starts loading on first qualifier interaction).
+      if (scriptFailed) cal.classList.add("is-failed");
       const calApi = getApi();
       if (!calApi) { cal.classList.add("is-failed"); return; } // preview: show the link-out
       // A fresh mount each time, so changed answers re-render the calendar with the new prefill.

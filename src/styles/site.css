@@ -84,7 +84,9 @@
 html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
-  scroll-padding-top: calc(var(--header-h) + 16px);
+  /* In-page links land each section flush under the sticky header, so none of the
+     section above shows (FAQ lands a little lower still; see #faq below). */
+  scroll-padding-top: var(--header-h);
 }
 
 body {
@@ -793,6 +795,8 @@ summary::-webkit-details-marker { display: none; }
    FAQ
    ========================================================================== */
 .faq { background: var(--paper); }
+/* Links to the FAQ land 24px lower than other sections, so nothing of the section above shows */
+#faq { scroll-margin-top: -24px; }
 .faq-grid { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: clamp(2rem, 5vw, 5rem); align-items: start; }
 .faq-list { border-top: 1px solid var(--ink); }
 .faq details { border-bottom: 1px solid var(--line); }
@@ -1550,6 +1554,8 @@ input::placeholder, textarea::placeholder { color: #767672; }
 .calendar-fallback { z-index: 2; background: var(--white); border-radius: calc(var(--radius-lg) - 1.5px); margin: 1.5px; transition: opacity 400ms var(--ease-out); }
 .calendar-frame.is-loaded .calendar-fallback { display: none; }
 .calendar-frame.is-failed .calendar-fallback-title::after { content: ""; }
+/* While the embed loads, only the title shows; the link-out appears only if it fails. */
+.calendar-frame:not(.is-failed) .calendar-fallback > :not(.calendar-fallback-title) { display: none; }
 
 /* ---- Copy-email button (footer) ------------------------------------------ */
 .footer-email { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
@@ -1623,7 +1629,7 @@ select option { color: var(--ink); }
 @media (max-width: 960px) {
   .book-qualify { order: -1; }
   .calendar-frame.is-locked { min-height: 340px; }
-  .calendar-frame { scroll-margin-top: 88px; }
+  .calendar-frame { scroll-margin-top: 104px; }  /* same landing spot as before the scroll-padding change */
 }
 /* Keep the example answer readable on narrow phones (input text stays 16px, so iOS doesn't zoom) */
 @media (max-width: 420px) { .book-qualify input::placeholder { font-size: 0.875rem; } }

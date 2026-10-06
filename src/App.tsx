@@ -340,7 +340,7 @@ export default function App() {
           <div className="wrap footer-grid">
             <div>
               <span className="footer-word" role="img" aria-label="Ossmark Media"></span>
-              <p className="footer-line">Facebook, Instagram and Google ads for South Jersey businesses.</p>
+              <p className="footer-line">Facebook, Instagram and Google ads for home service businesses.</p>
             </div>
             <div>
               <p className="footer-head">Service area</p>
