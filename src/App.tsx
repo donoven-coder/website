@@ -317,10 +317,11 @@ export default function App() {
                       <label htmlFor="q-goal">What would you like more of?</label>
                       <input id="q-goal" name="goal" type="text" maxLength={LIMITS.goal} placeholder="More AC replacement calls in Cherry Hill" />
                     </div>
-                    {/* Spam trap: hidden from people and screen readers; bots that fill it are dropped server-side */}
+                    {/* Spam trap. Never shown (display: none, so browser and password-manager autofill skip
+                        it) and given a name no autofill recognizes. Filled ones are flagged, not dropped. */}
                     <div className="hp-field" aria-hidden="true">
-                      <label htmlFor="q-company-website">Company website</label>
-                      <input id="q-company-website" name="company_website" type="text" tabIndex={-1} autoComplete="off" />
+                      <label htmlFor="q-hp-ref">Leave blank</label>
+                      <input id="q-hp-ref" name="hp_ref" type="text" tabIndex={-1} autoComplete="off" />
                     </div>
                     <button className="btn btn-dark btn-block" type="submit">Show open times</button>
                     <p className="visually-hidden" role="status" aria-live="polite" data-qualify-status></p>

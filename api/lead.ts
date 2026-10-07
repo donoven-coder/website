@@ -1,7 +1,8 @@
 // POST /api/lead: saves a qualifier submission to Notion and posts a Slack alert.
-// The page never waits on this (it unlocks the calendar first), so failures here only
-// affect record-keeping, and a failed Notion write still reaches Slack with every detail.
-import { clientIp, json, originAllowed, rateLimited, readBody } from "./_lib/http.js";
+// The page sends this in the background and never waits on it, so failures here only affect
+// record-keeping; a failed Notion write still reaches Slack with every detail, and likely bots
+// go to Slack flagged instead of being dropped. Every early return logs a one-line reason.
+import { clientIp, env, json, originAllowed, rateLimited, readBody } from "./_lib/http.js";
 import { sendSlack, slackEscape, slackLink } from "./_lib/alerts.js";
 import { CONSENT_OPTED_IN, createLead, PROPS, prop, SOURCE, STATUS } from "./_lib/notion.js";
 import { fitFor, isBudget, isPhone, isTrade, LIMITS } from "../src/lib/qualifier.js";
@@ -35,21 +36,41 @@ function validate(body: Record<string, unknown>): { lead?: LeadInput; error?: st
   return { lead };
 }
 
+/** Faster than this from first touching the form to submitting is treated as a likely bot. */
+const MIN_FORM_MS = 3000;
+
+/** One log line per early return: a reason only, never secrets or what the visitor typed. */
+const reject = (reason: string, res: Response) => { console.warn(`[lead] rejected: ${reason}`); return res; };
+
 export async function POST(request: Request): Promise<Response> {
-  if (!originAllowed(request)) return json({ ok: false, error: "origin" }, 403);
-  if (rateLimited(`lead:${clientIp(request)}`)) return json({ ok: false, error: "rate_limited" }, 429);
+  console.log(`[lead] env NOTION_TOKEN=${Boolean(env("NOTION_TOKEN"))} SLACK_WEBHOOK_URL=${Boolean(env("SLACK_WEBHOOK_URL"))}`);
+  if (!originAllowed(request)) {
+    return reject(`origin ${(request.headers.get("origin") ?? "none").slice(0, 100)}`, json({ ok: false, error: "origin" }, 403));
+  }
+  if (rateLimited(`lead:${clientIp(request)}`)) return reject("rate_limited", json({ ok: false, error: "rate_limited" }, 429));
 
   const raw = await readBody(request);
-  if (raw === null) return json({ ok: false, error: "too_large" }, 413);
+  if (raw === null) return reject("too_large", json({ ok: false, error: "too_large" }, 413));
   let body: Record<string, unknown>;
-  try { body = JSON.parse(raw) as Record<string, unknown>; } catch { return json({ ok: false, error: "json" }, 400); }
-
-  // Honeypot: real people never see this field. Answer "ok" so bots don't learn anything.
-  if (typeof body.company_website === "string" && body.company_website.trim()) return json({ ok: true });
+  try { body = JSON.parse(raw) as Record<string, unknown>; } catch { return reject("bad_json", json({ ok: false, error: "json" }, 400)); }
 
   const { lead, error } = validate(body);
-  if (!lead) return json({ ok: false, error: `invalid_${error}` }, 400);
+  if (!lead) return reject(`invalid_${error}`, json({ ok: false, error: `invalid_${error}` }, 400));
   const fit = fitFor(lead.trade, lead.ad_budget); // recomputed here; the browser's value isn't trusted
+  const summary = [lead.business, lead.trade, lead.ad_budget, lead.phone].map(slackEscape).join(" · ");
+
+  // Likely bot: the hidden field was filled, or the form was submitted implausibly fast. It isn't
+  // saved to Notion, but it still goes to Slack, so a false positive can never lose a real lead.
+  const formMs = typeof body.form_ms === "number" && Number.isFinite(body.form_ms) ? body.form_ms : null;
+  const botReason = typeof body.hp_ref === "string" && body.hp_ref.trim()
+    ? "hidden field filled"
+    : formMs !== null && formMs >= 0 && formMs < MIN_FORM_MS ? `submitted ${Math.round(formMs)}ms after first touch` : "";
+  if (botReason) {
+    console.warn(`[lead] possible bot: ${botReason}`);
+    const slackOk = await sendSlack(`⚠️ Possible bot (${botReason}), not saved to Notion: ${summary} · Fit: ${fit}${lead.goal ? `\nGoal: ${slackEscape(lead.goal)}` : ""}`);
+    console.log(`[lead] done notion=skipped slack=${slackOk}`);
+    return json({ ok: true, pageId: null });
+  }
 
   let notionUrl = "";
   let pageId = "";
@@ -79,7 +100,6 @@ export async function POST(request: Request): Promise<Response> {
     console.error("[lead] Notion write failed:", notionError);
   }
 
-  const summary = [lead.business, lead.trade, lead.ad_budget, lead.phone].map(slackEscape).join(" · ");
   const slackText = notionUrl
     ? `New lead: ${summary} · Fit: ${fit}\n${slackLink(notionUrl, "Open in Notion")}`
     : [
@@ -89,7 +109,8 @@ export async function POST(request: Request): Promise<Response> {
         [lead.utm_source, lead.utm_medium, lead.utm_campaign, lead.utm_content].some(Boolean)
           ? `UTM: ${slackEscape([lead.utm_source, lead.utm_medium, lead.utm_campaign, lead.utm_content].join(" / "))}` : "",
       ].filter(Boolean).join("\n");
-  await sendSlack(slackText);
+  const slackOk = await sendSlack(slackText);
+  console.log(`[lead] done notion=${Boolean(pageId)} slack=${slackOk}`);
 
   return json({ ok: true, pageId: pageId || null });
 }

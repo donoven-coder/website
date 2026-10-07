@@ -7,7 +7,11 @@ export const json = (body: unknown, status = 200): Response =>
     headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
   });
 
-export const env = (name: string, fallback = ""): string => process.env[name]?.trim() || fallback;
+/** Environment variable, trimmed, with one pair of surrounding quotes removed (a common paste slip). */
+export const env = (name: string, fallback = ""): string => {
+  const v = (process.env[name] ?? "").trim().replace(/^(["'])(.*)\1$/s, "$2").trim();
+  return v || fallback;
+};
 
 /** fetch that gives up after `ms`, so one slow service can't hold up the others. */
 export function fetchWithTimeout(url: string, init: RequestInit, ms: number): Promise<Response> {

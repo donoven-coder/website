@@ -1630,5 +1630,5 @@ select option { color: var(--ink); }
   .vl-field { animation: none !important; }
 }
 
-/* Qualifier spam trap: off screen, never shown to people (see App.tsx) */
-.hp-field { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+/* Qualifier spam trap: never displayed, so autofill leaves it alone (see App.tsx) */
+.hp-field { display: none; }

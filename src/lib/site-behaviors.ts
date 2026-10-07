@@ -872,6 +872,11 @@ export function initSite(): () => void {
       } catch { /* never let lead capture break booking */ }
     };
 
+    // Time from the first touch on the form to submit; the server flags implausibly fast ones.
+    let firstTouch = 0;
+    const touched = () => { if (!firstTouch) firstTouch = performance.now(); };
+    ["focusin", "pointerdown", "keydown", "change"].forEach((t) => qualify.addEventListener(t, touched, { passive: true }));
+
     qualify.addEventListener("submit", (e) => {
       e.preventDefault();
       const invalid = required.filter((el) => validate(el));
@@ -894,10 +899,12 @@ export function initSite(): () => void {
         phone: String(data.get("phone")).trim().slice(0, LIMITS.phone),
         leadId: contact?.leadId ?? newLeadId(),
       };
-      if (!leadSent) { leadSent = true; trackLead(answers); }
-      mountCalendar(answers);
+      // The lead goes out first, so a pixel or calendar error can't stop it being captured.
       sendLead({ lead_id: contact.leadId, ...answers, business: contact.business, phone: contact.phone,
-        company_website: String(data.get("company_website") ?? ""), ...readAttribution() });
+        hp_ref: String(data.get("hp_ref") ?? ""), form_ms: firstTouch ? Math.round(performance.now() - firstTouch) : -1,
+        ...readAttribution() });
+      try { if (!leadSent) { leadSent = true; trackLead(answers); } } catch { /* tracking is optional */ }
+      mountCalendar(answers);
       status.textContent = "Open times are showing in the calendar.";
       // On phones the calendar sits below the questions; bring it into view.
       if (window.matchMedia("(max-width: 960px)").matches) {
