@@ -42,6 +42,16 @@ const MIN_FORM_MS = 3000;
 /** One log line per early return: a reason only, never secrets or what the visitor typed. */
 const reject = (reason: string, res: Response) => { console.warn(`[lead] rejected: ${reason}`); return res; };
 
+/**
+ * GET isn't supported, but the 405 names the deployed commit (Vercel's built-in, non-secret
+ * VERCEL_GIT_COMMIT_SHA), so opening /api/lead in a browser shows which code is live.
+ */
+export function GET(): Response {
+  const res = json({ ok: false, error: "method", build: env("VERCEL_GIT_COMMIT_SHA").slice(0, 7) || "unknown" }, 405);
+  res.headers.set("Allow", "POST");
+  return res;
+}
+
 export async function POST(request: Request): Promise<Response> {
   console.log(`[lead] env NOTION_TOKEN=${Boolean(env("NOTION_TOKEN"))} SLACK_WEBHOOK_URL=${Boolean(env("SLACK_WEBHOOK_URL"))}`);
   if (!originAllowed(request)) {
