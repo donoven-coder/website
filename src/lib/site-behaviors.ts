@@ -1,6 +1,6 @@
 // Page behaviors: hero map, mobile menu, scroll reveals, process progress,
 // sticky booking bar, booking qualifier + lazy Cal.com embed and copy-email buttons.
-// Runs once after React has rendered the page (see App.tsx).
+// Runs once on the prerendered page (started from src/main.ts).
 
 import { trackLead, trackSchedule, type QualifierAnswers } from "@/lib/tracking";
 import { fitFor, isPhone, LIMITS } from "@/lib/qualifier";

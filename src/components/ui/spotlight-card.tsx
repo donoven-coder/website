@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, type ReactNode } from 'react';
+import type React from 'react';
+import type { ReactNode } from 'react';
 
 interface GlowCardProps {
   children: ReactNode;
@@ -28,77 +29,8 @@ const sizeMap = {
   lg: 'w-80 h-96'
 };
 
-// Ossmark: one shared pointer listener for every card instead of one per card, attached
-// only while a card is on screen. Card positions are measured in a ResizeObserver callback
-// (after layout, so no forced reflow), and each frame only the cards near the pointer are
-// restyled: the spotlight is 200px, so a card further away than that shows no glow anyway.
-type GlowEntry = { el: HTMLDivElement; box: { top: number; left: number; width: number; height: number } | null; lit: boolean; visible: boolean };
-const glowCards = new Set<GlowEntry>();
-const GLOW_RANGE = 260;
-let glowX = -1e4, glowY = -1e4, glowFrame = 0, glowListening = false;
-let glowRO: ResizeObserver | null = null;
-let glowIO: IntersectionObserver | null = null;
-
-const measureGlowCards = () => {
-  glowCards.forEach((c) => {
-    const r = c.el.getBoundingClientRect();
-    c.box = { top: r.top + window.scrollY, left: r.left + window.scrollX, width: r.width, height: r.height };
-  });
-};
-
-const applyGlow = () => {
-  glowFrame = 0;
-  const sx = window.scrollX, sy = window.scrollY;
-  glowCards.forEach((c) => {
-    if (!c.box || !c.visible) return;
-    const left = c.box.left - sx, top = c.box.top - sy;
-    const dx = Math.max(left - glowX, 0, glowX - (left + c.box.width));
-    const dy = Math.max(top - glowY, 0, glowY - (top + c.box.height));
-    const near = Math.hypot(dx, dy) < GLOW_RANGE;
-    // Update cards in range, plus one last time for a card the pointer just left.
-    if (!near && !c.lit) return;
-    c.lit = near;
-    c.el.style.setProperty('--x', glowX.toFixed(2));
-    c.el.style.setProperty('--xp', (glowX / window.innerWidth).toFixed(2));
-    c.el.style.setProperty('--y', glowY.toFixed(2));
-    c.el.style.setProperty('--yp', (glowY / window.innerHeight).toFixed(2));
-  });
-};
-
-const onGlowPointer = (e: PointerEvent) => {
-  glowX = e.clientX;
-  glowY = e.clientY;
-  if (!glowFrame) glowFrame = requestAnimationFrame(applyGlow);
-};
-
-const syncGlowListener = () => {
-  const any = [...glowCards].some((c) => c.visible);
-  if (any && !glowListening) document.addEventListener('pointermove', onGlowPointer, { passive: true });
-  if (!any && glowListening) document.removeEventListener('pointermove', onGlowPointer);
-  glowListening = any;
-};
-
-function registerGlowCard(el: HTMLDivElement) {
-  if (!glowRO) {
-    glowRO = new ResizeObserver(measureGlowCards);
-    glowRO.observe(document.body);
-    glowIO = new IntersectionObserver((entries) => {
-      entries.forEach((e) => glowCards.forEach((c) => { if (c.el === e.target) c.visible = e.isIntersecting; }));
-      syncGlowListener();
-    });
-  }
-  const entry: GlowEntry = { el, box: null, lit: false, visible: false };
-  glowCards.add(entry);
-  glowRO.observe(el);
-  glowIO!.observe(el);
-  return () => {
-    glowCards.delete(entry);
-    glowRO?.unobserve(el);
-    glowIO?.unobserve(el);
-    syncGlowListener();
-    if (!glowCards.size) cancelAnimationFrame(glowFrame);
-  };
-}
+// Ossmark: the pointer-tracking glow runs in plain TypeScript (src/lib/glow-cards.ts), so this
+// component is markup only: it's rendered to HTML at build time and no React ships to the browser.
 
 const GlowCard: React.FC<GlowCardProps> = ({
   children,
@@ -109,15 +41,6 @@ const GlowCard: React.FC<GlowCardProps> = ({
   height,
   customSize = false
 }) => {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = cardRef.current;
-    if (!el) return;
-    return registerGlowCard(el);
-  }, []);
-
   const { base, spread } = glowColorMap[glowColor];
 
   // Determine sizing
@@ -235,8 +158,8 @@ const GlowCard: React.FC<GlowCardProps> = ({
       {/* Ossmark: React 19 hoists and de-duplicates <style href precedence>, so all cards share one copy */}
       <style href="glow-card-styles" precedence="default">{beforeAfterStyles}</style>
       <div
-        ref={cardRef}
         data-glow
+        data-glow-card
         style={getInlineStyles()}
         className={`
           ${getSizeClasses()}
@@ -252,7 +175,7 @@ const GlowCard: React.FC<GlowCardProps> = ({
           ${className}
         `}
       >
-        <div ref={innerRef} data-glow></div>
+        <div data-glow></div>
         {children}
       </div>
     </>

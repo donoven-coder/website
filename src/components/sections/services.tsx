@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Clapperboard, Megaphone, MonitorSmartphone, Search } from "lucide-react";
 import { GlowCard } from "@/components/ui/spotlight-card";
@@ -90,7 +90,7 @@ export function Services() {
 
 function ServiceCard({ icon: Icon, title, summary, included }: Service) {
   // On phones the "What's included" list folds away behind a toggle; on larger screens it's always shown.
-  const [expanded, setExpanded] = useState(false);
+  // The toggle is wired up in plain TypeScript (src/lib/service-cards.ts).
   const listId = useId();
 
   return (
@@ -108,13 +108,13 @@ function ServiceCard({ icon: Icon, title, summary, included }: Service) {
           <p className="service-card-summary">{summary}</p>
         </div>
       </div>
-      <div className="service-card-body" data-expanded={expanded}>
+      <div className="service-card-body" data-expanded="false">
         <button
           type="button"
           className="service-card-toggle"
-          aria-expanded={expanded}
+          aria-expanded="false"
           aria-controls={listId}
-          onClick={() => setExpanded((v) => !v)}
+          data-service-toggle
         >
           What’s included
           <span className="faq-icon" aria-hidden="true"></span>

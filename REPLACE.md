@@ -36,16 +36,16 @@ a `<!-- REPLACE: ... -->` comment and/or a `data-replace` attribute.
 ## Add later (slots are ready)
 - [ ] **Client results / case studies**: add a real case study next to the guarantee once you have one. Don't publish numbers until they're real.
 - [ ] **Testimonials**: add them after the report section.
-- [ ] **Social share image**: add `og:image` (1200×630) and `og:url` in the `<head>` once the domain is live.
+- [x] **Social share image**: `public/og-image.jpg` (1200×630), with `og:image`, `og:url` and `canonical` in `index.html`. To change it, edit `brand-kit/share-image/og.html` and re-render with `render.mjs` next to it.
 
 ## Project structure
 - React + TypeScript + Tailwind CSS v4, built with Vite. shadcn-ready (`components.json`, `@/` import alias, `src/lib/utils.ts`).
-- `src/components/ui/`: shared UI components (shadcn convention). `velaris.tsx` is the hero background (CSS-only gradient drift; styles under "Hero background" in `site.css`); `spotlight-card.tsx` is the GlowCard used in Services.
+- `src/components/ui/`: shared UI components (shadcn convention). `velaris.tsx` is the hero background (CSS-only gradient drift; styles under "Hero background" in `site.css`, wiring in `src/lib/velaris.ts`); `spotlight-card.tsx` is the GlowCard used in Services (pointer glow in `src/lib/glow-cards.ts`).
 - `src/components/sections/`: page sections (`hero.tsx`, `services.tsx`). Hero gradient colors are `HERO_COLORS` in `hero.tsx`.
 - `src/App.tsx`: the rest of the page. `src/lib/site-behaviors.ts`: map, menu, reveals, booking bar, booking questions + Cal.com embed and copy-email buttons. `src/lib/tracking.ts`: Meta Pixel events.
 - `src/styles/site.css`: the site's design system, inlined into the page at build time (`vite.config.ts`). `src/assets/`: fonts and logo (hashed at build time, cached for a year). `public/`: favicon, font licenses and the logo source file.
-- Prerendering: `npm run build` renders the page to static HTML (`src/entry-server.tsx`, `scripts/prerender.mjs`) so it paints before JavaScript loads; `src/main.tsx` then hydrates it. Anything rendered must not read `window` or `document` outside effects, or the build fails / hydration mismatches.
-- Logo files for print and docs: `brand-kit/` (black and white SVGs, not deployed).
+- Prerendering: `npm run build` renders the page to static HTML (`src/entry-server.tsx`, `scripts/prerender.mjs`) so it paints before JavaScript loads; no React runs in the browser. `src/main.ts` attaches the behaviors (`src/lib/`) to that HTML, so components are markup only: interactivity goes in a `src/lib/` module, not in React state or effects. Components must not read `window` or `document`, or the build fails.
+- Logo files for print and docs: `brand-kit/` (black and white SVGs, not deployed). `brand-kit/share-image/` is the source of the link-preview image, `public/og-image.jpg`.
 - Performance: keep anything in `/assets` hash-named (import it from `src/`), because `vercel.json` caches that folder for a year. The Cal.com script loads only once someone starts the booking questions.
 - Add more shadcn components with `npx shadcn@latest add <name>`.
 

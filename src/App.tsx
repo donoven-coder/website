@@ -1,21 +1,10 @@
-import { useEffect } from "react";
 import { Hero } from "@/components/sections/hero";
 import { Services } from "@/components/sections/services";
-import { initSite } from "@/lib/site-behaviors";
 import { BUDGETS, LIMITS, TRADES } from "@/lib/qualifier";
 
+// The homepage markup. It's rendered to static HTML at build time (scripts/prerender.mjs);
+// no React runs in the browser. Behaviors attach to this markup from src/main.ts.
 export default function App() {
-  // Map, scroll reveals, sticky booking bar, booking qualifier + Cal.com embed and mobile menu.
-  // A failure here must never take the page down: React would unmount everything on an
-  // uncaught effect error. Content stays readable and the failsafe in index.html reveals it.
-  useEffect(() => {
-    try {
-      return initSite();
-    } catch (err) {
-      console.error("Page behaviors failed to start", err);
-    }
-  }, []);
-
   return (
     <>
         <a className="skip-link" href="#main">Skip to main content</a>

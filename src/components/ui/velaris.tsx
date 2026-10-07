@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react";
 import type React from "react";
 import { cn } from "@/lib/utils";
 
@@ -7,6 +6,7 @@ import { cn } from "@/lib/utils";
 // fields drift with transform-only animations, which the compositor runs off the main
 // thread. Same structure as the shader: color fields, a center glow, a vignette sized
 // from the hero's height, and grain (still, not per-frame). Styles: site.css "Hero background".
+// Markup only: the size and pause wiring runs in plain TypeScript (src/lib/velaris.ts).
 
 export interface VelarisProps {
   bg?: string;
@@ -32,36 +32,6 @@ const Velaris = ({
   className,
   children,
 }: VelarisProps) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    // The vignette and glow are sized from the hero's height, as in the shader.
-    // ResizeObserver reports the size after layout, so this never forces a reflow.
-    const ro = new ResizeObserver(([entry]) => {
-      container.style.setProperty("--vl-h", `${Math.round(entry.contentRect.height)}px`);
-    });
-    ro.observe(container);
-
-    // Drift only while the hero is on screen and the tab is visible.
-    let onScreen = true;
-    const sync = () => container.classList.toggle("is-paused", !onScreen || document.hidden);
-    const io = new IntersectionObserver(([entry]) => {
-      onScreen = entry.isIntersecting;
-      sync();
-    });
-    io.observe(container);
-    document.addEventListener("visibilitychange", sync);
-
-    return () => {
-      ro.disconnect();
-      io.disconnect();
-      document.removeEventListener("visibilitychange", sync);
-    };
-  }, []);
-
   const style = {
     height,
     backgroundColor: bg,
@@ -74,7 +44,7 @@ const Velaris = ({
   } as React.CSSProperties;
 
   return (
-    <div ref={containerRef} style={style} className={cn("velaris relative w-full overflow-hidden", className)}>
+    <div data-velaris style={style} className={cn("velaris relative w-full overflow-hidden", className)}>
       <div className="velaris-bg" aria-hidden="true">
         <span className="vl-field vl-f0" />
         <span className="vl-field vl-f1" />
