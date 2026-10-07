@@ -737,17 +737,48 @@ export function initSite(): () => void {
       // Hide the placeholder once the calendar is ready; show the link-out if it fails.
       nsApi("on", { action: "linkReady", callback: () => cal.classList.add("is-loaded") });
       nsApi("on", { action: "linkFailed", callback: () => cal.classList.add("is-failed") });
-      // Schedule fires only on a completed booking (both event names exist across embed versions).
-      const onBooked = (e?: { detail?: { data?: BookingData } }) => {
-        if (booked) booked.textContent = "You’re booked. Check your email for the confirmation and meeting details.";
-        if (!scheduleSent) { scheduleSent = true; trackSchedule(answers); }
-        goToConfirmation(e?.detail?.data);
-      };
-      nsApi("on", { action: "bookingSuccessfulV2", callback: onBooked });
-      nsApi("on", { action: "bookingSuccessful", callback: onBooked });
+      // Completed bookings are detected by the origin-checked message listener below, not by
+      // embed callbacks: the embed accepts messages from any origin and routes them by namespace.
       api = nsApi;
       return api;
     };
+
+    // A completed booking: Schedule once, then the confirmation page. Guarded, so Cal's two
+    // success events (bookingSuccessful and bookingSuccessfulV2) only count once.
+    function onBooked(e?: { detail?: { data?: BookingData } }) {
+      if (booked) booked.textContent = "You’re booked. Check your email for the confirmation and meeting details.";
+      if (!scheduleSent) { scheduleSent = true; trackSchedule(answers); }
+      goToConfirmation(e?.detail?.data);
+    }
+
+    // Booking detection: Cal's booking page posts "CAL:<namespace>:bookingSuccessful(V2)" to this
+    // page. The embed only hands those to listeners on the same namespace, and on iPhone Safari the
+    // booking page can lose ours ("15min") and post "CAL::…" instead, so embed callbacks never ran
+    // and the redirect didn't happen. Listening directly works for any namespace, and the origin
+    // check means only Cal can trigger Schedule and the redirect.
+    const CAL_ORIGIN = /^https:\/\/([a-z0-9-]+\.)*cal\.com$/;
+    const BOOKED_EVENT = /^CAL:[^:]*:bookingSuccessful(V2)?$/;
+    window.addEventListener("message", (e) => {
+      if (!CAL_ORIGIN.test(e.origin)) return;
+      const msg = e.data as { fullType?: unknown; data?: BookingData } | null;
+      if (msg && typeof msg.fullType === "string" && BOOKED_EVENT.test(msg.fullType)) onBooked({ detail: { data: msg.data } });
+    });
+
+    // Diagnostics for testing on a phone: add ?cal-debug to the URL to list every message the
+    // calendar sends (and when the redirect starts) in a small panel. Does nothing otherwise.
+    if (new URLSearchParams(location.search).has("cal-debug")) {
+      const panel = document.createElement("pre");
+      panel.setAttribute("aria-hidden", "true");
+      panel.style.cssText = "position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;max-height:40vh;overflow:auto;margin:0;padding:8px 10px;background:rgba(0,0,0,.85);color:#A8D8FF;font:11px/1.4 ui-monospace,monospace;border-radius:8px;white-space:pre-wrap";
+      panel.textContent = "cal-debug: waiting for calendar messages\n";
+      document.body.appendChild(panel);
+      const note = (line: string) => { panel.textContent += `${new Date().toISOString().slice(11, 23)} ${line}\n`; panel.scrollTop = panel.scrollHeight; };
+      window.addEventListener("message", (e) => {
+        const t = (e.data as { fullType?: unknown } | null)?.fullType;
+        if (typeof t === "string" && t.startsWith("CAL:")) note(`${e.origin} ${t}`);
+      });
+      (window as unknown as { __calDebug?: (l: string) => void }).__calDebug = note;
+    }
 
     // Load embed.js only once the visitor starts the qualifier (first focus, tap or change on
     // any field). Two dropdowns take long enough that it's ready by "Show open times";
@@ -880,6 +911,7 @@ export function initSite(): () => void {
     const goToConfirmation = (d?: BookingData) => {
       if (redirecting || isPreview()) return;
       redirecting = true;
+      (window as unknown as { __calDebug?: (l: string) => void }).__calDebug?.("booking detected → redirecting to /booked");
       try {
         const uid = d?.uid ?? d?.booking?.uid ?? "";
         const startTime = d?.startTime ?? d?.booking?.startTime ?? "";
