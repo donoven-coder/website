@@ -1511,6 +1511,8 @@ input::placeholder, textarea::placeholder { color: #767672; }
 .copy-btn-light.is-copied { border-color: var(--sky); background: var(--sky); color: var(--black); }
 
 .book-qualify .contact-form { margin-top: var(--space-3); }
+.consent-note { font-size: 0.8125rem; line-height: 1.5; color: var(--grey-600); }
+.consent-note a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 select {
   appearance: none;
   padding-right: 40px;

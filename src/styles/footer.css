@@ -1,0 +1,78 @@
+/* Footer for pages other than the homepage (/privacy, /terms, /booked): the same rules as the
+   footer in site.css, copied value for value. Markup: src/components/site-footer.tsx. */
+:root {
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+.wrap {
+  width: 100%;
+  max-width: var(--wrap);
+  margin-inline: auto;
+  padding-inline: clamp(16px, 4vw, 40px);
+}
+.site-footer p { margin: 0; text-wrap: pretty; }
+.footer-word {
+  display: block;
+  background: currentColor;
+  -webkit-mask: var(--logo) center / contain no-repeat;
+  mask: var(--logo) center / contain no-repeat;
+}
+.site-footer { background: var(--black); color: var(--on-dark-soft); border-top: 1px solid var(--line-dark); padding-top: var(--space-6); }
+.footer-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: var(--space-4); padding-bottom: var(--space-5); }
+.footer-word { --logo: url("../assets/brand/ossmark-wordmark.svg"); width: 190px; height: 9px; color: var(--white); margin-bottom: var(--space-2); }
+.footer-head { font-weight: 600; color: var(--white); margin-bottom: 6px; }
+.footer-line { font-size: var(--step--1); line-height: 1.7; }
+.site-footer a { color: var(--white); text-underline-offset: 3px; }
+.site-footer a:hover { color: var(--signal); }
+.footer-base {
+  display: flex; justify-content: space-between; gap: var(--space-2);
+  padding-block: var(--space-3);
+  border-top: 1px solid var(--line-dark);
+  font-size: var(--step--1);
+}
+@media (max-width: 760px) { .footer-grid { grid-template-columns: 1fr; } }
+
+/* Grain surface, focus ring and link underline (site.css "POLISH LAYER") */
+.site-footer { position: relative; isolation: isolate; }
+.site-footer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--grain);
+  background-size: 160px 160px;
+  opacity: 0.09;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.site-footer :focus-visible { outline-color: var(--sky); }
+.site-footer a {
+  text-decoration: none;
+  background: linear-gradient(currentColor, currentColor) right calc(100% - 2px) / 0 1px no-repeat;
+  transition: background-size 420ms var(--ease-out), color var(--dur-fast);
+}
+.site-footer a:hover {
+  background-size: 100% 1px;
+  background-position-x: left;
+}
+
+/* Copy-email button */
+.footer-email { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.footer-email-address { color: var(--white); user-select: all; }
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--line-dark);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--on-dark);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--dur-fast), color var(--dur-fast), background-color var(--dur-fast);
+}
+.copy-btn:hover { border-color: var(--sky); color: var(--sky); }
+.copy-btn.is-copied { border-color: var(--sky); background: var(--sky); color: var(--black); }

@@ -313,6 +313,7 @@ export default function App() {
                       <input id="q-hp-ref" name="hp_ref" type="text" tabIndex={-1} autoComplete="off" />
                     </div>
                     <button className="btn btn-dark btn-block" type="submit">Show open times</button>
+                    <p className="consent-note">By continuing, you agree to our <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>, and to be contacted by Ossmark Media about your request.</p>
                     <p className="visually-hidden" role="status" aria-live="polite" data-qualify-status></p>
                   </form>
                 </div>
@@ -350,6 +351,7 @@ export default function App() {
                   </button>
                 </p>
                 <p className="footer-line"><a href="#book">Book a discovery call</a></p>
+                <p className="footer-line"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
             </div>
           </div>
           <div className="wrap footer-base">

@@ -9,6 +9,8 @@ const PRELOAD_FONTS = ["instrument-serif", "instrument-serif-italic", "dmsans"];
 // Build only: inline the stylesheet into index.html (removes a render-blocking request) and
 // preload the hero fonts by their hashed file names.
 function inlineCssAndPreloadFonts(): Plugin {
+  // Stylesheets are removed only after every page is done, since pages can share one (/privacy, /terms).
+  const inlined = new Set<string>();
   return {
     name: "ossmark-inline-css-preload-fonts",
     apply: "build",
@@ -22,7 +24,7 @@ function inlineCssAndPreloadFonts(): Plugin {
           const link = new RegExp(`<link[^>]*href="/${file.replace(/[.]/g, "\\.")}"[^>]*>`);
           if (!link.test(html)) continue;
           html = html.replace(link, () => `<style>${String(out.source)}</style>`);
-          delete bundle[file];
+          inlined.add(file);
         }
         const preloads = PRELOAD_FONTS.map((name) => {
           const file = Object.keys(bundle).find((f) => new RegExp(`^assets/${name}-[\\w-]{8}\\.woff2$`).test(f));
@@ -33,6 +35,12 @@ function inlineCssAndPreloadFonts(): Plugin {
           "<!-- Font preloads (hashed file names) are added at build time; see vite.config.ts -->",
           preloads.join("\n  "),
         );
+      },
+    },
+    generateBundle: {
+      order: "post",
+      handler(_, bundle) {
+        inlined.forEach((file) => delete bundle[file]);
       },
     },
   };
@@ -52,6 +60,8 @@ export default defineConfig({
       input: {
         main: path.resolve(import.meta.dirname, "index.html"),
         booked: path.resolve(import.meta.dirname, "booked.html"),
+        privacy: path.resolve(import.meta.dirname, "privacy.html"),
+        terms: path.resolve(import.meta.dirname, "terms.html"),
       },
     },
   },

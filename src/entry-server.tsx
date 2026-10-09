@@ -4,11 +4,29 @@ import { StrictMode } from "react";
 import { renderToString } from "react-dom/server";
 import App from "./App";
 import { Booked } from "./booked/Booked";
+import { Privacy } from "./legal/Privacy";
+import { Terms } from "./legal/Terms";
 
 export function renderBooked(): string {
   return renderToString(
     <StrictMode>
       <Booked />
+    </StrictMode>,
+  );
+}
+
+export function renderPrivacy(): string {
+  return renderToString(
+    <StrictMode>
+      <Privacy />
+    </StrictMode>,
+  );
+}
+
+export function renderTerms(): string {
+  return renderToString(
+    <StrictMode>
+      <Terms />
     </StrictMode>,
   );
 }

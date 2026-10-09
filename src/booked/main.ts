@@ -1,6 +1,7 @@
 // /booked in the browser: a few lines of plain TypeScript on top of the prerendered page.
 import "../styles/booked.css";
 import { formatET } from "@/lib/time";
+import { initFooter } from "@/lib/footer";
 
 type Booking = { uid?: string; startTime?: string };
 
@@ -31,3 +32,5 @@ document.querySelector<HTMLButtonElement>("[data-video-id]")?.addEventListener("
   iframe.allowFullscreen = true;
   btn.replaceWith(iframe);
 }, { once: true });
+
+initFooter();

@@ -1,4 +1,5 @@
 import { CONFIRMATION_VIDEO_URL } from "./config";
+import { SiteFooter } from "@/components/site-footer";
 
 // Static markup for /booked, rendered to HTML at build time (scripts/prerender.mjs).
 // No React runs in the browser here: src/booked/main.ts fills in the booking time and the
@@ -56,6 +57,8 @@ export function Booked() {
           Need to change the time? <a href="https://cal.com/bookings/upcoming" rel="noopener" data-reschedule-link>Reschedule or cancel</a>
         </p>
       </main>
+
+      <SiteFooter />
     </>
   );
 }

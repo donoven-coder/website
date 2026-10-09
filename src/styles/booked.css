@@ -1,5 +1,6 @@
 /* /booked confirmation page. Light, small, and independent of the homepage stylesheet. */
 @import "./tokens.css";
+@import "./footer.css";
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }

@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* /privacy and /terms don't use Tailwind; keep their text from generating utilities here. */
+@source not "./legal";
 
 /* Site styles sit in the components layer so Tailwind utilities (used by
    shadcn-style components such as GlowCard) can still override them. */
