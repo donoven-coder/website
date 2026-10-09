@@ -2,7 +2,7 @@
 // Keep this file free of browser and Node APIs so both sides can import it.
 
 /** Monthly ad spend (USD) below which a lead is tagged Fit = review. Never blocks a booking. */
-export const FIT_REVIEW_THRESHOLD = 1000;
+export const FIT_REVIEW_THRESHOLD = 1500;
 
 export const TRADES = [
   "HVAC",
