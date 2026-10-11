@@ -1,11 +1,12 @@
-// POST /api/lead: saves a qualifier submission to Notion and posts a Slack alert.
+// POST /api/lead: saves a qualifier submission to Notion and posts a Slack alert and an email.
 // The page sends this in the background and never waits on it, so failures here only affect
-// record-keeping; a failed Notion write still reaches Slack with every detail, and likely bots
-// go to Slack flagged instead of being dropped. Every early return logs a one-line reason.
+// record-keeping; a failed Notion write still reaches Slack and email with every detail, and
+// likely bots go to Slack flagged instead of being dropped. Every early return logs a one-line reason.
 import { clientIp, env, json, originAllowed, rateLimited, readBody } from "./_lib/http.js";
-import { sendSlack, slackEscape, slackLink } from "./_lib/alerts.js";
+import { sendAlertEmail, sendSlack, slackEscape, slackLink } from "./_lib/alerts.js";
 import { CONSENT_OPTED_IN, createLead, PROPS, prop, SOURCE, STATUS } from "./_lib/notion.js";
 import { fitFor, isBudget, isPhone, isTrade, LIMITS } from "../src/lib/qualifier.js";
+import { formatET } from "../src/lib/time.js";
 
 type LeadInput = {
   lead_id: string; trade: string; ad_budget: string; business: string; phone: string; goal: string;
@@ -119,8 +120,44 @@ export async function POST(request: Request): Promise<Response> {
         [lead.utm_source, lead.utm_medium, lead.utm_campaign, lead.utm_content].some(Boolean)
           ? `UTM: ${slackEscape([lead.utm_source, lead.utm_medium, lead.utm_campaign, lead.utm_content].join(" / "))}` : "",
       ].filter(Boolean).join("\n");
-  const slackOk = await sendSlack(slackText);
-  console.log(`[lead] done notion=${Boolean(pageId)} slack=${slackOk}`);
+
+  // Email (Brevo): a new-lead alert, or, if Notion failed, every submitted field so it can be
+  // entered by hand. sendAlertEmail never throws and times out on its own, so it can't block
+  // anything; it runs alongside Slack.
+  const subjectName = lead.business.replace(/\s+/g, " ");
+  const v = (s: string) => s || "-";
+  const emailJob = notionUrl
+    ? sendAlertEmail(`New lead (not booked yet): ${subjectName}`, [
+        "A new lead came in on ossmark.media. They haven't booked a call yet.",
+        "",
+        `Business: ${lead.business}`,
+        `Trade: ${lead.trade}`,
+        `Monthly ad spend: ${lead.ad_budget}`,
+        `Wants more of: ${v(lead.goal)}`,
+        `Phone: ${lead.phone}`,
+        `Fit: ${fit}`,
+        `Notion: ${notionUrl}`,
+      ].join("\n"))
+    : sendAlertEmail(`ACTION NEEDED: lead not saved to Notion: ${subjectName}`, [
+        "This lead was NOT saved to Notion. Please add it by hand.",
+        `Notion error: ${notionError}`,
+        "",
+        `Business: ${lead.business}`,
+        `Phone: ${lead.phone}`,
+        `Trade: ${lead.trade}`,
+        `Monthly ad spend: ${lead.ad_budget}`,
+        `Wants more of: ${v(lead.goal)}`,
+        `Fit: ${fit}`,
+        `Lead ID: ${lead.lead_id} (put this in "Lead ID" so a later booking links to the row)`,
+        `UTM source: ${v(lead.utm_source)}`,
+        `UTM medium: ${v(lead.utm_medium)}`,
+        `UTM campaign: ${v(lead.utm_campaign)}`,
+        `UTM content: ${v(lead.utm_content)}`,
+        `fbclid: ${v(lead.fbclid)}`,
+        `Received: ${formatET(new Date().toISOString())}`,
+      ].join("\n"));
+  const [slackOk, emailOk] = await Promise.all([sendSlack(slackText), emailJob]);
+  console.log(`[lead] done notion=${Boolean(pageId)} slack=${slackOk} email=${emailOk}`);
 
   return json({ ok: true, pageId: pageId || null });
 }

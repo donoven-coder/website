@@ -117,7 +117,7 @@ export async function POST(request: Request): Promise<Response> {
       `Wants more of: ${d.goal}`,
       `Phone: ${d.phone}`,
       `Email: ${who.email || "-"}`,
-      `Call: ${when || "see Cal.com"} (America/New_York)`,
+      `Call: ${when || "see Cal.com"}`,
       `Fit: ${d.fit}`,
       `Notion: ${lead?.url || "not saved" + (notionError ? ` (${notionError})` : "")}`,
     ].join("\n")));
