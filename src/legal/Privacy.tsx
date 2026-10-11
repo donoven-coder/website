@@ -3,7 +3,7 @@ import { LegalPage } from "./LegalPage";
 // /privacy page text. Keep it word for word as approved; change it only with a new effective date.
 export function Privacy() {
   return (
-    <LegalPage title="Privacy Policy">
+    <LegalPage title="Privacy Policy" effective="October 11, 2026">
       <h2>The short version</h2>
       <p>We collect the information you give us when you ask about our services or book a call. We use it to reply to you and to run our advertising. We use the Meta Pixel to measure our ads. We don't sell your personal information.</p>
 
@@ -36,6 +36,7 @@ export function Privacy() {
         <li>Internal alerts: Slack</li>
         <li>Advertising measurement: Meta</li>
         <li>Video calls: Zoom</li>
+        <li>Email alerts: Brevo, which sends us an internal email when someone submits the form or books a call.</li>
       </ul>
       <p>They process data for us under their own terms. We don't sell your personal information, and we don't share it for others' marketing. We may disclose information if the law requires it or to protect our rights.</p>
 

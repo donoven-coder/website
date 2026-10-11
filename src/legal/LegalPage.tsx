@@ -4,10 +4,8 @@ import { SiteFooter } from "@/components/site-footer";
 // Layout for /privacy and /terms: the logo-only header used on /booked, one narrow column of
 // text, and the site footer. Rendered to HTML at build time (scripts/prerender.mjs).
 
-/** Shown as "Effective …" at the top of both pages. Update it when the text changes. */
-export const EFFECTIVE_DATE = "October 9, 2026";
-
-export function LegalPage({ title, children }: { title: string; children: ReactNode }) {
+/** `effective` is shown as "Effective …" at the top. Each page has its own; update it when that page's text changes. */
+export function LegalPage({ title, effective, children }: { title: string; effective: string; children: ReactNode }) {
   return (
     <>
       <header className="bk-top">
@@ -19,7 +17,7 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
 
       <main className="legal">
         <h1 className="legal-title">{title}</h1>
-        <p className="legal-sub">Effective {EFFECTIVE_DATE}</p>
+        <p className="legal-sub">Effective {effective}</p>
         {children}
       </main>
 

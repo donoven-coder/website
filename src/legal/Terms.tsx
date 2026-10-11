@@ -3,7 +3,7 @@ import { LegalPage } from "./LegalPage";
 // /terms page text. Keep it word for word as approved; change it only with a new effective date.
 export function Terms() {
   return (
-    <LegalPage title="Terms">
+    <LegalPage title="Terms" effective="October 9, 2026">
       <h2>Using this site</h2>
       <p>These terms cover your use of ossmark.media. By using the site, you agree to them. If you don't agree, please don't use it.</p>
 
