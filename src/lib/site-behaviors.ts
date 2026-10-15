@@ -1,8 +1,8 @@
 // Page behaviors: hero map, mobile menu, scroll reveals, process progress,
-// sticky booking bar, booking qualifier + lazy Cal.com embed and copy-email buttons.
+// sticky booking bar, the Cal.com booking embed and copy-email buttons.
 // Runs once on the prerendered page (started from src/main.ts).
 
-import { trackLead, trackSchedule, type QualifierAnswers } from "@/lib/tracking";
+import { trackSchedule, type QualifierAnswers } from "@/lib/tracking";
 import { fitFor, isEmail, isPhone, LIMITS } from "@/lib/qualifier";
 import { captureAttribution, readAttribution } from "@/lib/attribution";
 
@@ -667,22 +667,21 @@ export function initSite(): () => void {
   }
 
   /* ------------------------------------------------------------------
-     Booking: a short qualifier unlocks the Cal.com calendar (official embed.js).
-     The script loads when the visitor starts the qualifier; the calendar itself
-     mounts on submit, with the answers prefilled as booking notes + metadata.
-     Booking link: data-cal-link on the calendar frame.
+     Booking: the Cal.com calendar (official embed.js) loads as soon as the page
+     does; Cal's own booking form asks the questions. First-touch ad attribution
+     goes along as booking metadata. Booking link: data-cal-link on the calendar frame.
+     (The old qualifier form is gone from the page; its handling below only runs
+     if a [data-qualify] form is present.)
      ------------------------------------------------------------------ */
   const cal = document.querySelector<HTMLElement>("[data-cal]");
   const qualify = document.querySelector<HTMLFormElement>("[data-qualify]");
-  if (cal && qualify) {
+  if (cal) {
     const ns = "15min"; // matches the namespace in Cal.com's embed snippet
     const calLink = cal.dataset.calLink!;
     const booked = document.querySelector("[data-booked]");
-    const direct = cal.querySelector<HTMLAnchorElement>("[data-cal-direct]");
     let answers: QualifierAnswers | null = null;
     // Contact details stay out of the pixel and out of page URLs (see prefill below).
     let contact: { business: string; phone: string; email: string; leadId: string } | null = null;
-    let leadSent = false;
     let redirecting = false;
     let scriptFailed = false;
     let scheduleSent = false;
@@ -747,7 +746,7 @@ export function initSite(): () => void {
     // success events (bookingSuccessful and bookingSuccessfulV2) only count once.
     function onBooked(e?: { detail?: { data?: BookingData } }) {
       if (booked) booked.textContent = "You’re booked. Check your email for the confirmation and meeting details.";
-      if (!scheduleSent) { scheduleSent = true; trackSchedule(answers); }
+      if (!scheduleSent) { scheduleSent = true; trackSchedule(); }
       goToConfirmation(e?.detail?.data);
     }
 
@@ -780,51 +779,20 @@ export function initSite(): () => void {
       (window as unknown as { __calDebug?: (l: string) => void }).__calDebug = note;
     }
 
-    // Load embed.js only once the visitor starts the qualifier (first focus, tap or change on
-    // any field). Two dropdowns take long enough that it's ready by "Show open times";
-    // mountCalendar() calls getApi() too, so a submit without touching a field still works.
-    const warm = () => {
-      getApi();
-      ["focusin", "pointerdown", "change"].forEach((t) => qualify.removeEventListener(t, warm));
-    };
-    ["focusin", "pointerdown", "change"].forEach((t) => qualify.addEventListener(t, warm, { passive: true }));
+    // Booking metadata for Cal: first-touch utm_* and fbclid (empty ones left out). The visitor's
+    // answers come from Cal's own booking questions. The fallback link-out keeps its plain URL.
+    const prefill = (): Record<string, string> => Object.fromEntries(
+      Object.entries(readAttribution()).filter(([, v]) => v).map(([k, v]) => [`metadata[${k}]`, v as string]),
+    );
 
-    // Prefill for Cal: "notes" fills the booking's Additional notes; metadata[...] is stored on the booking;
-    // "email" fills the attendee email. Business name, phone and email go into the embedded calendar
-    // only (by request); they are left out of the fallback link-out, which opens as a visible URL in a new tab.
-    const prefill = (a: QualifierAnswers, withContact: boolean): Record<string, string> => {
-      const notes = [
-        a.fit === "review" ? "[Review fit]" : "",
-        withContact && contact ? `Business: ${contact.business}` : "",
-        withContact && contact ? `Phone: ${contact.phone}` : "",
-        `Trade: ${a.trade}`,
-        `Monthly ad spend: ${a.ad_budget}`,
-        a.goal ? `Wants more of: ${a.goal}` : "",
-      ].filter(Boolean).join("\n");
-      return {
-        notes,
-        "metadata[trade]": a.trade,
-        "metadata[ad_budget]": a.ad_budget,
-        "metadata[goal]": a.goal || "-",
-        "metadata[fit]": a.fit,
-        ...(contact ? { "metadata[lead_id]": contact.leadId } : {}),
-        ...(withContact && contact?.email ? { email: contact.email } : {}),
-      };
-    };
-
-    const mountCalendar = (a: QualifierAnswers) => {
-      const fields = prefill(a, true);
-      if (direct) {
-        const url = new URL("https://cal.com/" + calLink);
-        Object.entries(prefill(a, false)).forEach(([k, v]) => url.searchParams.set(k, v));
-        direct.href = url.toString();
-      }
-      cal.classList.remove("is-locked", "is-loaded", "is-failed");
-      // The script already failed to load (it starts loading on first qualifier interaction).
+    const mountCalendar = () => {
+      const fields = prefill();
+      cal.classList.remove("is-loaded", "is-failed");
+      // The script already failed to load.
       if (scriptFailed) cal.classList.add("is-failed");
       const calApi = getApi();
       if (!calApi) { cal.classList.add("is-failed"); return; } // preview: show the link-out
-      // A fresh mount each time, so changed answers re-render the calendar with the new prefill.
+      // A fresh mount each time it's called.
       const oldMount = cal.querySelector<HTMLElement>("[data-cal-mount]")!;
       const mount = oldMount.cloneNode(false) as HTMLElement;
       oldMount.replaceWith(mount);
@@ -836,84 +804,87 @@ export function initSite(): () => void {
       // If nothing has rendered after 12s (blocked script, slow network), offer the direct link.
       window.setTimeout(() => { if (!cal.classList.contains("is-loaded")) cal.classList.add("is-failed"); }, 12000);
     };
+    mountCalendar();
 
-    const status = qualify.querySelector<HTMLElement>("[data-qualify-status]")!;
-    const required = [...qualify.querySelectorAll<HTMLInputElement | HTMLSelectElement>("[required]")];
-    const check: Record<string, (v: string) => string> = {
-      trade: (v) => (v ? "" : "Choose your trade."),
-      ad_budget: (v) => (v ? "" : "Choose your monthly ad spend."),
-      business: (v) => (v.trim() ? "" : "Enter your business name."),
-      phone: (v) => (!v.trim() ? "Enter your best phone number." : isPhone(v) ? "" : "Enter a phone number like 856-555-0123."),
-      email: (v) => (!v.trim() ? "Enter your email address." : isEmail(v) ? "" : "Enter an email like name@company.com."),
-    };
-    const validate = (el: HTMLInputElement | HTMLSelectElement) => {
-      const msg = check[el.name]?.(el.value) ?? "";
-      el.closest(".field")!.classList.toggle("has-error", Boolean(msg));
-      el.setAttribute("aria-invalid", msg ? "true" : "false");
-      const err = qualify.querySelector(`#${el.id}-err`);
-      if (err) err.textContent = msg;
-      return msg;
-    };
-    required.forEach((el) => {
-      el.addEventListener("change", () => validate(el));
-      // Text fields re-check as you type once they've been flagged.
-      el.addEventListener("input", () => { if (el.getAttribute("aria-invalid") === "true") validate(el); });
-    });
-
-    // Saves the lead (Notion + Slack) in the background. The calendar never waits on it.
-    const sendLead = (payload: Record<string, unknown>) => {
-      if (isPreview()) return;
-      try {
-        void fetch("/api/lead", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          keepalive: true,
-          signal: AbortSignal.timeout(4000),
-        }).catch(() => {});
-      } catch { /* never let lead capture break booking */ }
-    };
-
-    // Time from the first touch on the form to submit; the server flags implausibly fast ones.
-    let firstTouch = 0;
-    const touched = () => { if (!firstTouch) firstTouch = performance.now(); };
-    ["focusin", "pointerdown", "keydown", "change"].forEach((t) => qualify.addEventListener(t, touched, { passive: true }));
-
-    qualify.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const invalid = required.filter((el) => validate(el));
-      if (invalid.length) { invalid[0].focus(); return; }
-
-      const data = new FormData(qualify);
-      const trade = String(data.get("trade"));
-      const adBudget = String(data.get("ad_budget"));
-      const goal = String(data.get("goal") ?? "").trim().slice(0, LIMITS.goal);
-      answers = {
-        trade,
-        ad_budget: adBudget,
-        goal,
-        // Nobody is turned away; these bookings are just tagged for a closer look.
-        fit: fitFor(trade, adBudget),
+    // The old qualifier form, if one is on the page (none is now): left in place until a cleanup commit.
+    if (qualify) {
+      const status = qualify.querySelector<HTMLElement>("[data-qualify-status]")!;
+      const required = [...qualify.querySelectorAll<HTMLInputElement | HTMLSelectElement>("[required]")];
+      const check: Record<string, (v: string) => string> = {
+        trade: (v) => (v ? "" : "Choose your trade."),
+        ad_budget: (v) => (v ? "" : "Choose your monthly ad spend."),
+        business: (v) => (v.trim() ? "" : "Enter your business name."),
+        phone: (v) => (!v.trim() ? "Enter your best phone number." : isPhone(v) ? "" : "Enter a phone number like 856-555-0123."),
+        email: (v) => (!v.trim() ? "Enter your email address." : isEmail(v) ? "" : "Enter an email like name@company.com."),
       };
-      // One lead ID per visit: re-submitting (e.g. changing an answer) updates the same lead.
-      contact = {
-        business: String(data.get("business")).trim().slice(0, LIMITS.business),
-        phone: String(data.get("phone")).trim().slice(0, LIMITS.phone),
-        email: String(data.get("email") ?? "").trim().slice(0, LIMITS.email),
-        leadId: contact?.leadId ?? newLeadId(),
+      const validate = (el: HTMLInputElement | HTMLSelectElement) => {
+        const msg = check[el.name]?.(el.value) ?? "";
+        el.closest(".field")!.classList.toggle("has-error", Boolean(msg));
+        el.setAttribute("aria-invalid", msg ? "true" : "false");
+        const err = qualify.querySelector(`#${el.id}-err`);
+        if (err) err.textContent = msg;
+        return msg;
       };
-      // The lead goes out first, so a pixel or calendar error can't stop it being captured.
-      sendLead({ lead_id: contact.leadId, ...answers, business: contact.business, phone: contact.phone, email: contact.email,
-        hp_ref: String(data.get("hp_ref") ?? ""), form_ms: firstTouch ? Math.round(performance.now() - firstTouch) : -1,
-        ...readAttribution() });
-      try { if (!leadSent) { leadSent = true; trackLead(answers); } } catch { /* tracking is optional */ }
-      mountCalendar(answers);
-      status.textContent = "Open times are showing in the calendar.";
-      // On phones the calendar sits below the questions; bring it into view.
-      if (window.matchMedia("(max-width: 960px)").matches) {
-        cal.scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" });
-      }
-    });
+      required.forEach((el) => {
+        el.addEventListener("change", () => validate(el));
+        // Text fields re-check as you type once they've been flagged.
+        el.addEventListener("input", () => { if (el.getAttribute("aria-invalid") === "true") validate(el); });
+      });
+
+      // Saves the lead (Notion + Slack) in the background. The calendar never waits on it.
+      const sendLead = (payload: Record<string, unknown>) => {
+        if (isPreview()) return;
+        try {
+          void fetch("/api/lead", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            keepalive: true,
+            signal: AbortSignal.timeout(4000),
+          }).catch(() => {});
+        } catch { /* never let lead capture break booking */ }
+      };
+
+      // Time from the first touch on the form to submit; the server flags implausibly fast ones.
+      let firstTouch = 0;
+      const touched = () => { if (!firstTouch) firstTouch = performance.now(); };
+      ["focusin", "pointerdown", "keydown", "change"].forEach((t) => qualify.addEventListener(t, touched, { passive: true }));
+
+      qualify.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const invalid = required.filter((el) => validate(el));
+        if (invalid.length) { invalid[0].focus(); return; }
+
+        const data = new FormData(qualify);
+        const trade = String(data.get("trade"));
+        const adBudget = String(data.get("ad_budget"));
+        const goal = String(data.get("goal") ?? "").trim().slice(0, LIMITS.goal);
+        answers = {
+          trade,
+          ad_budget: adBudget,
+          goal,
+          // Nobody is turned away; these bookings are just tagged for a closer look.
+          fit: fitFor(trade, adBudget),
+        };
+        // One lead ID per visit: re-submitting (e.g. changing an answer) updates the same lead.
+        contact = {
+          business: String(data.get("business")).trim().slice(0, LIMITS.business),
+          phone: String(data.get("phone")).trim().slice(0, LIMITS.phone),
+          email: String(data.get("email") ?? "").trim().slice(0, LIMITS.email),
+          leadId: contact?.leadId ?? newLeadId(),
+        };
+        // The lead goes out first, so a pixel or calendar error can't stop it being captured.
+        sendLead({ lead_id: contact.leadId, ...answers, business: contact.business, phone: contact.phone, email: contact.email,
+          hp_ref: String(data.get("hp_ref") ?? ""), form_ms: firstTouch ? Math.round(performance.now() - firstTouch) : -1,
+          ...readAttribution() });
+        mountCalendar();
+        status.textContent = "Open times are showing in the calendar.";
+        // On phones the calendar sits below the questions; bring it into view.
+        if (window.matchMedia("(max-width: 960px)").matches) {
+          cal.scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" });
+        }
+      });
+    }
 
     // After a booking: keep the time and uid in sessionStorage (never the URL), give the
     // Schedule pixel request a moment to leave (up to 800ms), then open the confirmation page.

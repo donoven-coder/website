@@ -4,9 +4,9 @@
 // (same booking uid and status) is acknowledged without touching Notion or alerting again.
 import { env, json, readBody } from "./_lib/http.js";
 import { cancelScheduledEmail, sendAlertEmail, sendSlack, slackEscape, slackLink } from "./_lib/alerts.js";
-import { attendee, formatET, HANDLED, validSignature, type CalEvent, type CalPayload, type CalWebhook } from "./_lib/cal.js";
+import { answer, attendee, formatET, HANDLED, validSignature, type CalEvent, type CalPayload, type CalWebhook } from "./_lib/cal.js";
 import { CONSENT_OPTED_IN, createLead, findLeadBy, PROPS, prop, SOURCE, STATUS, updateLead, type Lead, type Props } from "./_lib/notion.js";
-import { fitFor, isBudget, isTrade } from "../src/lib/qualifier.js";
+import { fitFor, isBudget, isPhone, isTrade, LIMITS } from "../src/lib/qualifier.js";
 
 const TARGET_STATUS: Record<CalEvent, string> = {
   BOOKING_CREATED: STATUS.booked,
@@ -42,11 +42,44 @@ export async function POST(request: Request): Promise<Response> {
   const when = formatET(p.startTime);
   const target = TARGET_STATUS[ev];
 
-  // Values from the booking itself, used when creating a lead and as alert fallbacks.
-  const trade = isTrade(meta.trade ?? "") ? meta.trade! : "";
-  const budget = isBudget(meta.ad_budget ?? "") ? meta.ad_budget! : "";
-  const goal = meta.goal && meta.goal !== "-" ? meta.goal.slice(0, 500) : "";
-  const fit = meta.fit === "ok" || meta.fit === "review" ? meta.fit : trade && budget ? fitFor(trade, budget) : "";
+  // Values from the booking itself, used when creating a lead and as alert fallbacks. Cal's booking
+  // questions come first (identifiers: business, trade, ad_budget, notes, attendeePhoneNumber); older
+  // bookings without them (the qualifier and the follow-up email links) fall back to metadata and the
+  // "Business:" / "Phone:" note lines, as before. Trade and ad spend must match the site's options exactly.
+  const cal = {
+    business: answer(p, "business").slice(0, LIMITS.business),
+    trade: answer(p, "trade"),
+    budget: answer(p, "ad_budget"),
+    goal: answer(p, "notes").slice(0, LIMITS.goal),
+    phone: (answer(p, "attendeePhoneNumber") || (p.attendees?.[0]?.phoneNumber ?? "").trim()).slice(0, LIMITS.phone),
+  };
+  const fromBookingForm = Boolean(cal.business || cal.trade || cal.budget);
+  const bizName = cal.business || notes.business;
+  const rawTrade = cal.trade || meta.trade || "";
+  const trade = isTrade(rawTrade) ? rawTrade : "";
+  const rawBudget = cal.budget || meta.ad_budget || "";
+  const budget = isBudget(rawBudget) ? rawBudget : "";
+  const goal = cal.goal || (meta.goal && meta.goal !== "-" ? meta.goal.slice(0, 500) : "");
+  const phone = isPhone(cal.phone) ? cal.phone : notes.phone;
+  const fit = !cal.trade && (meta.fit === "ok" || meta.fit === "review") ? meta.fit : trade && budget ? fitFor(trade, budget) : "";
+  // What the visitor told us, plus first-touch ad attribution (metadata from the site's embed).
+  // Only values that are present: an empty one never overwrites what a lead row already has.
+  const str = (v: string | undefined, max: number) => (v ?? "").trim().slice(0, max);
+  const attribution: [string, string][] = [
+    [PROPS.utmSource, str(meta.utm_source, 200)], [PROPS.utmMedium, str(meta.utm_medium, 200)],
+    [PROPS.utmCampaign, str(meta.utm_campaign, 200)], [PROPS.utmContent, str(meta.utm_content, 200)],
+    [PROPS.fbclid, str(meta.fbclid, 200)],
+  ];
+  const answers: Props = {
+    ...(bizName ? { [PROPS.business]: prop.title(bizName) } : {}),
+    ...(who.name ? { [PROPS.contactName]: prop.text(who.name.slice(0, 200)) } : {}),
+    ...(trade ? { [PROPS.niche]: prop.select(trade) } : {}),
+    ...(budget ? { [PROPS.budget]: prop.select(budget) } : {}),
+    ...(goal ? { [PROPS.goal]: prop.text(goal) } : {}),
+    ...(fit ? { [PROPS.fit]: prop.select(fit) } : {}),
+    ...(phone ? { [PROPS.phone]: prop.phone(phone) } : {}),
+    ...Object.fromEntries(attribution.filter(([, v]) => v).map(([k, v]) => [k, prop.text(v)])),
+  };
 
   let lead: Lead | null = null;
   let notionError = "";
@@ -82,19 +115,17 @@ export async function POST(request: Request): Promise<Response> {
     };
 
     if (lead) {
-      lead = await updateLead(lead.id, changes);
+      // A new booking also records the answers given with it; reschedules and cancellations don't.
+      lead = await updateLead(lead.id, ev === "BOOKING_CREATED" ? { ...answers, ...changes } : changes);
     } else {
-      // No matching lead: a direct booking, or a qualifier lead whose Notion write failed earlier.
+      // No matching lead: a booking from the site's calendar (answers in Cal's form), a direct
+      // booking, or a qualifier lead whose Notion write failed earlier.
       const answeredQualifier = Boolean(trade || meta.lead_id);
       lead = await createLead({
-        [PROPS.business]: prop.title(notes.business || who.name || who.email || "Unknown"),
-        [PROPS.source]: prop.select(answeredQualifier ? SOURCE.qualifier : SOURCE.direct),
+        ...answers,
+        [PROPS.business]: prop.title(bizName || who.name || who.email || "Unknown"),
+        [PROPS.source]: prop.select(fromBookingForm ? SOURCE.booking : answeredQualifier ? SOURCE.qualifier : SOURCE.direct),
         [PROPS.consent]: prop.select(CONSENT_OPTED_IN),
-        ...(trade ? { [PROPS.niche]: prop.select(trade) } : {}),
-        ...(budget ? { [PROPS.budget]: prop.select(budget) } : {}),
-        ...(goal ? { [PROPS.goal]: prop.text(goal) } : {}),
-        ...(fit ? { [PROPS.fit]: prop.select(fit) } : {}),
-        ...(notes.phone ? { [PROPS.phone]: prop.phone(notes.phone) } : {}),
         ...(meta.lead_id ? { [PROPS.leadId]: prop.text(meta.lead_id) } : {}),
         ...changes,
       });
@@ -105,12 +136,12 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   // ---- alerts (each channel independent) ---------------------------------------------
-  const business = lead?.business || notes.business || who.name || "Unknown business";
+  const business = lead?.business || bizName || who.name || "Unknown business";
   const d = {
     trade: lead?.niche || trade || "-",
     budget: budget || lead?.budget || "-",
     goal: lead?.goal || goal || "-",
-    phone: lead?.phone || notes.phone || "-",
+    phone: lead?.phone || phone || "-",
     fit: lead?.fit || fit || "-",
   };
   const notionLine = lead?.url ? slackLink(lead.url, "Open in Notion") : "";

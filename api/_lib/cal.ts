@@ -19,18 +19,33 @@ export type CalPayload = {
   rescheduleUid?: string;
   fromReschedule?: string;
   rescheduleStartTime?: string;
-  attendees?: { name?: string; email?: string }[];
-  responses?: { name?: { value?: string } | string; email?: { value?: string } | string };
+  attendees?: { name?: string; email?: string; phoneNumber?: string }[];
+  /** Booking-form answers keyed by question identifier, as { label, value } (or a bare value). */
+  responses?: Record<string, Answer>;
+  /** The same answers for the custom (non-system) questions only. */
+  userFieldsResponses?: Record<string, Answer>;
+  additionalNotes?: string;
+  description?: string;
   metadata?: Record<string, string | undefined>;
 };
+type Answer = { label?: string; value?: unknown } | string | undefined;
 
 export type CalWebhook = { triggerEvent?: string; payload?: CalPayload };
+
+const val = (x: unknown): string => {
+  const v = typeof x === "object" && x !== null ? (x as { value?: unknown }).value : x;
+  return typeof v === "string" ? v.trim() : "";
+};
 
 export function attendee(p: CalPayload): { name: string; email: string } {
   const a = p.attendees?.[0] ?? {};
   const r = p.responses ?? {};
-  const val = (x: unknown) => (typeof x === "string" ? x : (x as { value?: string } | undefined)?.value ?? "");
   return { name: (a.name || val(r.name) || "").trim(), email: (a.email || val(r.email) || "").trim() };
+}
+
+/** A booking-form answer by question identifier (e.g. "business"), or "" if it wasn't asked or answered. */
+export function answer(p: CalPayload, id: string): string {
+  return val(p.responses?.[id]) || val(p.userFieldsResponses?.[id]);
 }
 
 export { formatET } from "../../src/lib/time.js";

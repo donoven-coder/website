@@ -4,6 +4,7 @@ import { env, fetchWithTimeout } from "./http.js";
 
 export const PROPS = {
   business: "Business Name", // title
+  contactName: "Contact Name", // text: the attendee's name from the Cal booking
   niche: "Niche", // select: new trades are added as options automatically
   phone: "Phone", // phone_number
   email: "Email", // email
@@ -34,7 +35,7 @@ export const STATUS = {
   rescheduled: "Rescheduled",
   cancelled: "Cancelled",
 } as const;
-export const SOURCE = { qualifier: "Website qualifier", direct: "Direct booking – no qualifier" } as const;
+export const SOURCE = { qualifier: "Website qualifier", booking: "Website booking", direct: "Direct booking – no qualifier" } as const;
 export const CONSENT_OPTED_IN = "Opted In / Inquired";
 
 const API = () => env("NOTION_API_BASE", "https://api.notion.com");

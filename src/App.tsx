@@ -243,7 +243,7 @@ export default function App() {
             <div className="wrap">
               <div className="book-head" data-reveal>
                 <h2 id="book-title" className="book-title">Book your free discovery call</h2>
-                <p>A few quick questions, then pick a time. Fifteen minutes on Zoom, no pressure.</p>
+                <p>Pick a time that works for you. Fifteen minutes on Zoom, no pressure.</p>
                 <a className="btn btn-dark btn-lg book-cta" href="/schedule" data-cta="book">Book a call</a>
               </div>
             </div>

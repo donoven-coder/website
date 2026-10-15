@@ -75,6 +75,6 @@ const toParams = (a: QualifierAnswers): Params => ({
 /** Qualifier submitted: the visitor is about to see open times. */
 export const trackLead = (a: QualifierAnswers) => track("Lead", toParams(a));
 
-/** A discovery call was actually booked (fired from Cal.com's booking-success event). */
-export const trackSchedule = (a: QualifierAnswers | null) =>
-  track("Schedule", a ? toParams(a) : { content_name: "Discovery call" });
+/** A discovery call was actually booked (fired from Cal.com's booking-success event). The visitor's
+    answers live in Cal's booking form now, so Schedule carries only the event name. */
+export const trackSchedule = () => track("Schedule", { content_name: "Discovery call" });
