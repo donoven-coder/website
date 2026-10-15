@@ -42,6 +42,24 @@ export async function POST(request: Request): Promise<Response> {
   const when = formatET(p.startTime);
   const target = TARGET_STATUS[ev];
 
+  // TEMPORARY (remove once Cal's answer shape is known): logs the SHAPE of a new booking's payload.
+  // Key names and value types only, never values; for trade and ad_budget only whether the answer
+  // exactly matches one of the site's options.
+  if (ev === "BOOKING_CREATED") {
+    const kind = (v: unknown): string => Array.isArray(v) ? `array(${v.length})`
+      : v && typeof v === "object" ? `{${Object.keys(v).map((k) => `${k}:${kind((v as Record<string, unknown>)[k])}`).join(",")}}`
+      : v === null ? "null" : typeof v;
+    const shape = (o: unknown) => (o && typeof o === "object" ? Object.fromEntries(Object.entries(o).map(([k, v]) => [k, kind(v)])) : kind(o));
+    console.log("[cal-webhook] shape", JSON.stringify({
+      payloadKeys: Object.keys(p).sort(),
+      responses: shape(p.responses),
+      userFieldsResponses: shape(p.userFieldsResponses),
+      metadataKeys: Object.keys(meta).sort(),
+      tradeMatches: isTrade(answer(p, "trade")),
+      adBudgetMatches: isBudget(answer(p, "ad_budget")),
+    }));
+  }
+
   // Values from the booking itself, used when creating a lead and as alert fallbacks. Cal's booking
   // questions come first (identifiers: business, trade, ad_budget, notes, attendeePhoneNumber); older
   // bookings without them (the qualifier and the follow-up email links) fall back to metadata and the
