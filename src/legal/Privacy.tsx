@@ -3,7 +3,7 @@ import { LegalPage } from "./LegalPage";
 // /privacy page text. Keep it word for word as approved; change it only with a new effective date.
 export function Privacy() {
   return (
-    <LegalPage title="Privacy Policy" effective="October 14, 2026">
+    <LegalPage title="Privacy Policy" effective="October 15, 2026">
       <h2>The short version</h2>
       <p>We collect the information you give us when you ask about our services or book a call. We use it to reply to you and to run our advertising. We use the Meta Pixel to measure our ads. We don't sell your personal information.</p>
 
@@ -11,13 +11,12 @@ export function Privacy() {
       <p>Ossmark Media ("Ossmark," "we," "us") runs advertising for home service businesses. This policy covers ossmark.media and the pages on it, including our booking pages.</p>
 
       <h2>What we collect</h2>
-      <p>What you tell us. When you fill out our qualifier form or book a call, we collect your name, business name, email address, phone number, trade, monthly ad budget range, and your goal. If you book a call, we also collect the time you choose and any answers you give on the booking form.</p>
+      <p>What you tell us. When you book a call, we collect your name, business name, email address, phone number, trade, monthly ad budget range, and what you would like more of, along with the time you choose and any other answers you give on the booking form.</p>
       <p>What we collect automatically. When you visit the site we collect your IP address, browser and device type, the pages you view, the website you came from, and campaign details in the link you clicked (for example, UTM tags and Meta's click ID). We collect this through cookies and similar technology.</p>
 
       <h2>How we use it</h2>
       <ul>
         <li>To reply to your request and run the call you booked</li>
-        <li>To follow up by email about booking your call if you don't book right away</li>
         <li>To decide whether we're a good fit to work together</li>
         <li>To measure and improve our ads and website</li>
         <li>To keep the site secure and prevent spam</li>
@@ -25,8 +24,8 @@ export function Privacy() {
       </ul>
 
       <h2>Advertising and the Meta Pixel</h2>
-      <p>We use the Meta Pixel, a tool from Meta Platforms, Inc. It records events on our site, such as viewing a page, submitting the qualifier form, and booking a call, and sends them to Meta along with browser information such as cookie identifiers. We use this to measure our ads and to show our ads to people who may be interested. Meta handles that data under its own policies at facebook.com/privacy/policy.</p>
-      <p>You can limit this by changing your ad settings in your Facebook and Instagram accounts, by blocking cookies in your browser, or by using a browser setting or extension that blocks trackers. We send Meta the event along with general answers such as your trade and ad budget range. We never send your name, business name, email address, or phone number.</p>
+      <p>We use the Meta Pixel, a tool from Meta Platforms, Inc. It records events on our site, such as viewing a page and booking a call, and sends them to Meta along with browser information such as cookie identifiers. We use this to measure our ads and to show our ads to people who may be interested. Meta handles that data under its own policies at facebook.com/privacy/policy.</p>
+      <p>You can limit this by changing your ad settings in your Facebook and Instagram accounts, by blocking cookies in your browser, or by using a browser setting or extension that blocks trackers. We send Meta the event, such as viewing a page or booking a call. We never send your name, business name, email address, phone number, trade, or ad budget.</p>
 
       <h2>Who we share it with</h2>
       <p>We share information only with the services we use to run the business:</p>
@@ -48,7 +47,6 @@ export function Privacy() {
       <ul>
         <li>Email us at donoven@ossmark.media to ask what we have about you, to correct it, or to delete it. We'll reply within 30 days.</li>
         <li>Marketing emails: reply "stop" to any of them, or email us, and we won't email you again.</li>
-        <li>Follow-up emails: if you don't book a call, we may send you up to two short emails about booking one. Reply "stop" to any of them and we won't email you again.</li>
         <li>California and other state residents: you may have additional rights to know, delete, and correct your information, and to opt out of the sale or sharing of it. We don't sell personal information. Use the email above to make a request.</li>
       </ul>
 
