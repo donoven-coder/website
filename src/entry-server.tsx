@@ -4,6 +4,7 @@ import { StrictMode } from "react";
 import { renderToString } from "react-dom/server";
 import App from "./App";
 import { Booked } from "./booked/Booked";
+import { Schedule } from "./schedule/Schedule";
 import { Privacy } from "./legal/Privacy";
 import { Terms } from "./legal/Terms";
 
@@ -11,6 +12,14 @@ export function renderBooked(): string {
   return renderToString(
     <StrictMode>
       <Booked />
+    </StrictMode>,
+  );
+}
+
+export function renderSchedule(): string {
+  return renderToString(
+    <StrictMode>
+      <Schedule />
     </StrictMode>,
   );
 }

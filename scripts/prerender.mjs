@@ -8,8 +8,8 @@ const root = path.resolve(import.meta.dirname, "..");
 const ssrDir = path.join(root, "dist-ssr");
 const marker = '<div id="root"></div>';
 
-const { render, renderBooked, renderPrivacy, renderTerms } = await import(pathToFileURL(path.join(ssrDir, "entry-server.js")).href);
-for (const [file, renderPage] of [["index.html", render], ["booked.html", renderBooked], ["privacy.html", renderPrivacy], ["terms.html", renderTerms]]) {
+const { render, renderBooked, renderSchedule, renderPrivacy, renderTerms } = await import(pathToFileURL(path.join(ssrDir, "entry-server.js")).href);
+for (const [file, renderPage] of [["index.html", render], ["booked.html", renderBooked], ["schedule.html", renderSchedule], ["privacy.html", renderPrivacy], ["terms.html", renderTerms]]) {
   const htmlPath = path.join(root, "dist", file);
   const html = await readFile(htmlPath, "utf8");
   if (!html.includes(marker)) throw new Error(`prerender: ${marker} not found in dist/${file}`);

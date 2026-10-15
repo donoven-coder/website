@@ -1,6 +1,5 @@
 import { Hero } from "@/components/sections/hero";
 import { Services } from "@/components/sections/services";
-import { BUDGETS, LIMITS, TRADES } from "@/lib/qualifier";
 
 // The homepage markup. It's rendered to static HTML at build time (scripts/prerender.mjs);
 // no React runs in the browser. Behaviors attach to this markup from src/main.ts.
@@ -10,7 +9,7 @@ export default function App() {
         <a className="skip-link" href="#main">Skip to main content</a>
 
         <aside className="topbar" aria-label="Booking notice">
-          <p>Free 15-minute discovery calls, booking now. <a href="#book">Pick a time</a></p>
+          <p>Free 15-minute discovery calls, booking now. <a href="/schedule">Pick a time</a></p>
         </aside>
 
         <header className="site-header" data-header>
@@ -32,7 +31,7 @@ export default function App() {
                 <li><a href="#process">How it works</a></li>
                 <li><a href="#faq">FAQ</a></li>
               </ul>
-              <a className="btn btn-dark btn-sm" href="#book">Book a call</a>
+              <a className="btn btn-dark btn-sm" href="/schedule">Book a call</a>
             </nav>
           </div>
         </header>
@@ -80,7 +79,7 @@ export default function App() {
                   <p>I started Ossmark Media because I kept watching good home service businesses burn money on ads that looked busy and booked nobody.</p>
                   <p>When you work with us, you work with me. I plan your campaigns, I read your numbers every week, and I’m the one on the call. No account managers passing you around, and no 12-month contract.</p>
                 </div>
-                <a className="btn btn-dark" href="#book" data-cta="founder">Talk with Donoven</a>
+                <a className="btn btn-dark" href="/schedule" data-cta="founder">Talk with Donoven</a>
               </div>
             </div>
           </section>
@@ -130,7 +129,7 @@ export default function App() {
                   <p className="offer-label">Our guarantee</p>
                   <p className="offer-title">20 booked jobs in 60 days, or month 3 is free.</p>
                   <p>If our campaigns don’t put 20 booked jobs on your calendar in your first 60 days, you don’t pay for month 3. We keep working either way.</p>
-                  <a className="offer-link" href="#book" data-cta="guarantee">See if you qualify</a>
+                  <a className="offer-link" href="/schedule" data-cta="guarantee">See if you qualify</a>
                 </div>
               </div>
               <div className="report-card" role="group" aria-labelledby="report-card-title" data-reveal>
@@ -240,88 +239,13 @@ export default function App() {
             </div>
           </section>
 
-          {/* BOOK */}
+          {/* BOOK: the qualifier and calendar live on /schedule. id="book" keeps old /#book links landing here. */}
           <section className="book" id="book" aria-labelledby="book-title">
             <div className="wrap">
               <div className="book-head" data-reveal>
                 <h2 id="book-title" className="book-title">Book your free discovery call</h2>
                 <p>A few quick questions, then pick a time. Fifteen minutes on Zoom, no pressure.</p>
-              </div>
-
-              <div className="book-grid">
-                <div className="book-calendar">
-                  <div className="calendar-frame is-locked" data-cal data-cal-link="ossmark-media-qzze1b/15min">
-                    {/* Cal.com inline embed mounts here once the qualifier is answered (see site-behaviors.ts) */}
-                    <div className="calendar-mount" id="my-cal-inline-15min" data-cal-mount></div>
-                    <div className="calendar-lock" data-cal-lock>
-                      <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3.5" y="4.5" width="13" height="12" rx="2"/><path d="M3.5 8.5h13M7 2.8v3.4M13 2.8v3.4"/></svg>
-                      <p>Answer a few quick questions to see open times.</p>
-                    </div>
-                    <div className="calendar-fallback">
-                      <p className="calendar-fallback-title">Pick a time for your call</p>
-                      <p>The calendar opens in a new tab if it doesn’t load here.</p>
-                      <a className="btn btn-dark" href="https://cal.com/ossmark-media-qzze1b/15min" target="_blank" rel="noopener" data-cal-direct>Open the booking calendar</a>
-                    </div>
-                  </div>
-                  <p className="book-direct">
-                    Prefer email? <span className="book-direct-address">donoven@ossmark.media</span>
-                    <button type="button" className="copy-btn copy-btn-light" data-copy="donoven@ossmark.media" aria-label="Copy email address donoven@ossmark.media">
-                      <span data-copy-label>Copy</span>
-                    </button>
-                  </p>
-                  <p className="book-confirm" role="status" aria-live="polite" data-booked></p>
-                </div>
-
-                <div className="book-message book-qualify">
-                  <h3 className="book-message-title">First, a few quick questions.</h3>
-                  <p className="book-message-sub">So we spend the call on your business, not the basics.</p>
-                  <form className="contact-form" noValidate data-qualify>
-                    <div className="field">
-                      <label htmlFor="q-trade">What’s your trade? <span className="req" aria-hidden="true">*</span></label>
-                      <select id="q-trade" name="trade" required aria-describedby="q-trade-err" defaultValue="">
-                        <option value="" disabled>Choose one</option>
-                        {TRADES.map((t) => <option key={t}>{t}</option>)}
-                      </select>
-                      <p className="field-error" id="q-trade-err" aria-live="polite"></p>
-                    </div>
-                    <div className="field">
-                      <label htmlFor="q-budget">What are you putting into ads each month? <span className="req" aria-hidden="true">*</span></label>
-                      <select id="q-budget" name="ad_budget" required aria-describedby="q-budget-err" defaultValue="">
-                        <option value="" disabled>Choose one</option>
-                        {BUDGETS.map((b) => <option key={b.label}>{b.label}</option>)}
-                      </select>
-                      <p className="field-error" id="q-budget-err" aria-live="polite"></p>
-                    </div>
-                    <div className="field">
-                      <label htmlFor="q-business">Business name <span className="req" aria-hidden="true">*</span></label>
-                      <input id="q-business" name="business" type="text" autoComplete="organization" required maxLength={LIMITS.business} aria-describedby="q-business-err" />
-                      <p className="field-error" id="q-business-err" aria-live="polite"></p>
-                    </div>
-                    <div className="field">
-                      <label htmlFor="q-phone">Best phone number <span className="req" aria-hidden="true">*</span></label>
-                      <input id="q-phone" name="phone" type="tel" autoComplete="tel" inputMode="tel" required maxLength={LIMITS.phone} aria-describedby="q-phone-err" />
-                      <p className="field-error" id="q-phone-err" aria-live="polite"></p>
-                    </div>
-                    <div className="field">
-                      <label htmlFor="q-email">Email <span className="req" aria-hidden="true">*</span></label>
-                      <input id="q-email" name="email" type="email" autoComplete="email" inputMode="email" required maxLength={LIMITS.email} aria-describedby="q-email-err" />
-                      <p className="field-error" id="q-email-err" aria-live="polite"></p>
-                    </div>
-                    <div className="field">
-                      <label htmlFor="q-goal">What would you like more of?</label>
-                      <input id="q-goal" name="goal" type="text" maxLength={LIMITS.goal} placeholder="More AC replacement calls in Cherry Hill" />
-                    </div>
-                    {/* Spam trap. Never shown (display: none, so browser and password-manager autofill skip
-                        it) and given a name no autofill recognizes. Filled ones are flagged, not dropped. */}
-                    <div className="hp-field" aria-hidden="true">
-                      <label htmlFor="q-hp-ref">Leave blank</label>
-                      <input id="q-hp-ref" name="hp_ref" type="text" tabIndex={-1} autoComplete="off" />
-                    </div>
-                    <button className="btn btn-dark btn-block" type="submit">Show open times</button>
-                    <p className="consent-note">By continuing, you agree to our <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>, and to be contacted by Ossmark Media about your request.</p>
-                    <p className="visually-hidden" role="status" aria-live="polite" data-qualify-status></p>
-                  </form>
-                </div>
+                <a className="btn btn-dark btn-lg book-cta" href="/schedule" data-cta="book">Book a call</a>
               </div>
             </div>
           </section>
@@ -331,7 +255,7 @@ export default function App() {
             <div className="wrap closer-inner">
               <span className="closer-logo" aria-hidden="true" data-closer-logo></span>
               <h2 id="closer-title" className="closer-title">Ready to fill your calendar?</h2>
-              <a className="btn btn-sky btn-lg" href="#book" data-cta="closer">Book your free discovery call</a>
+              <a className="btn btn-sky btn-lg" href="/schedule" data-cta="closer">Book your free discovery call</a>
             </div>
           </section>
         </main>
@@ -355,7 +279,7 @@ export default function App() {
                     <span data-copy-label>Copy</span>
                   </button>
                 </p>
-                <p className="footer-line"><a href="#book">Book a discovery call</a></p>
+                <p className="footer-line"><a href="/schedule">Book a discovery call</a></p>
                 <p className="footer-line"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
             </div>
           </div>
@@ -367,7 +291,7 @@ export default function App() {
 
         {/* Mobile: persistent booking bar, hidden while the booking section is on screen */}
         <div className="sticky-cta" data-sticky-cta aria-hidden="true">
-          <a className="btn btn-dark btn-block" href="#book" tabIndex={-1} data-cta="sticky">Book your free discovery call</a>
+          <a className="btn btn-dark btn-block" href="/schedule" tabIndex={-1} data-cta="sticky">Book your free discovery call</a>
         </div>
     </>
   );

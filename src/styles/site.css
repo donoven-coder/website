@@ -742,6 +742,9 @@ summary::-webkit-details-marker { display: none; }
 .book-head { text-align: center; max-width: 40rem; margin: 0 auto var(--space-5); }
 .book-title { font-family: var(--serif); font-weight: 400; font-size: var(--step-4); line-height: 0.98; }
 .book-head p { margin-top: var(--space-2); font-size: var(--step-1); color: var(--grey-600); }
+/* Homepage closing block: heading, subtitle and one button to /schedule (no form below it) */
+.book-cta { margin-top: var(--space-4); }
+.book-head:last-child { margin-bottom: 0; }
 
 .book-grid {
   display: grid;

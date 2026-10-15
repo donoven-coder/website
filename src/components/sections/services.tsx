@@ -79,7 +79,7 @@ export function Services() {
 
         <div className="inline-cta inline-cta-dark" data-reveal>
           <p>Not sure which you need? That’s what the call is for.</p>
-          <a className="btn btn-sky" href="#book" data-cta="services">
+          <a className="btn btn-sky" href="/schedule" data-cta="services">
             Book a discovery call
           </a>
         </div>

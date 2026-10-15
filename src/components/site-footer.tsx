@@ -1,7 +1,6 @@
 // The homepage footer (src/App.tsx), for the other pages: /privacy, /terms and /booked.
 // Same markup and styling (styles: src/styles/footer.css; copy button and year: src/lib/footer.ts).
-// Keep it in step with the footer in App.tsx. The only difference is that the booking link
-// points to the homepage section ("/#book") instead of "#book".
+// Keep it in step with the footer in App.tsx.
 export function SiteFooter() {
   return (
     <footer className="site-footer">
@@ -22,7 +21,7 @@ export function SiteFooter() {
               <span data-copy-label>Copy</span>
             </button>
           </p>
-          <p className="footer-line"><a href="/#book">Book a discovery call</a></p>
+          <p className="footer-line"><a href="/schedule">Book a discovery call</a></p>
           <p className="footer-line"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
         </div>
       </div>

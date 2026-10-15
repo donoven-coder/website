@@ -12,6 +12,7 @@ a `<!-- REPLACE: ... -->` comment and/or a `data-replace` attribute.
 - Booking questions: trade, monthly ad spend and goal unlock the calendar and are passed to Cal.com as the booking's notes plus `metadata[trade]`, `metadata[ad_budget]`, `metadata[goal]` and `metadata[fit]`. Bookings from "Other home service" or "Under $1,000" are tagged `fit=review` and their notes start with "[Review fit]". Nobody is blocked.
 
 ## Lead funnel (needs setup, see the checklist in the session notes)
+- The qualifier and calendar live on `/schedule` (`schedule.html`, `src/components/sections/book.tsx`); the homepage "Book a call" buttons point there.
 - Qualifier → `POST /api/lead` → Notion **Leads** (+ Slack "New lead"). The calendar never waits on it.
 - Cal.com webhook → `POST /api/cal-webhook` → Notion status/time + Slack (booked, rescheduled, cancelled) + email on booked.
 - After booking, visitors land on `/booked` (noindex, PageView only). Video: set `CONFIRMATION_VIDEO_URL` in `src/booked/config.ts` to a Loom share link.

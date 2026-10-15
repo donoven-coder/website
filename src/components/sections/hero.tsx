@@ -21,7 +21,7 @@ export function Hero() {
             Ossmark Media runs Facebook, Instagram and Google ads for home service businesses, built around one number: customers who actually booked.
           </p>
           <div className="hero-actions reveal-load" style={{ '--d': 3 } as React.CSSProperties}>
-            <a className="btn btn-sky btn-lg" href="#book" data-cta="hero">Book your free discovery call</a>
+            <a className="btn btn-sky btn-lg" href="/schedule" data-cta="hero">Book your free discovery call</a>
             <a className="btn btn-line-light btn-lg" href="#process">See how it works</a>
           </div>
           <ul className="trust-row reveal-load" style={{ '--d': 4 } as React.CSSProperties}>
@@ -48,7 +48,7 @@ export function Hero() {
             <div className="hero-media-copy">
               <p className="media-stat"><span className="serif">Burlington</span> to <span className="serif">Cape May</span></p>
               <p id="map-caption" className="media-caption">Ads targeted town by town, to the customers who can actually reach you.</p>
-              <a className="btn btn-light" href="#book" data-cta="panel">Book a call</a>
+              <a className="btn btn-light" href="/schedule" data-cta="panel">Book a call</a>
             </div>
           </div>
         </div>

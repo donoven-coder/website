@@ -60,6 +60,7 @@ export default defineConfig({
       input: {
         main: path.resolve(import.meta.dirname, "index.html"),
         booked: path.resolve(import.meta.dirname, "booked.html"),
+        schedule: path.resolve(import.meta.dirname, "schedule.html"),
         privacy: path.resolve(import.meta.dirname, "privacy.html"),
         terms: path.resolve(import.meta.dirname, "terms.html"),
       },
