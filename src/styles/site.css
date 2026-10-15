@@ -684,7 +684,14 @@ summary::-webkit-details-marker { display: none; }
 .report-metrics .is-key dd { color: var(--white); font-family: var(--serif); font-weight: 400; font-size: var(--step-2); }
 .report-note { margin-top: var(--space-2); font-size: var(--step--1); color: var(--grey-600); }
 
-@media (max-width: 860px) { .report-grid { grid-template-columns: 1fr; } }
+@media (max-width: 860px) { .report-grid { grid-template-columns: 1fr; } .offer { margin-top: 0; } }
+/* Desktop: the offer sits under the copy in the left column, the card spans both rows on the right. */
+@media (min-width: 861px) {
+  .report-grid { grid-template-areas: "copy card" "offer card"; row-gap: 0; }
+  .report-copy { grid-area: copy; align-self: end; }
+  .report-card { grid-area: card; }
+  .offer { grid-area: offer; align-self: start; }
+}
 
 /* ==========================================================================
    Local

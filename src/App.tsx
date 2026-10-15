@@ -124,13 +124,6 @@ export default function App() {
               <div className="report-copy" data-reveal>
                 <h2 id="report-title" className="section-title">The report you’ll get every Monday</h2>
                 <p className="section-sub">No 40-page decks or vanity metrics. Five numbers that tell you whether your ads are making money, readable on your phone in under a minute.</p>
-
-                <div className="offer">
-                  <p className="offer-label">Our guarantee</p>
-                  <p className="offer-title">20 booked jobs in 60 days, or month 3 is free.</p>
-                  <p>If our campaigns don’t put 20 booked jobs on your calendar in your first 60 days, you don’t pay for month 3. We keep working either way.</p>
-                  <a className="offer-link" href="/schedule" data-cta="guarantee">See if you qualify</a>
-                </div>
               </div>
               <div className="report-card" role="group" aria-labelledby="report-card-title" data-reveal>
                 <div className="report-card-head">
@@ -145,6 +138,12 @@ export default function App() {
                   <div className="is-key"><dt>Cost per booked job</dt><dd>$ &mdash;</dd></div>
                 </dl>
                 <p className="report-note">Your real numbers appear here from week one.</p>
+              </div>
+              <div className="offer" data-reveal>
+                <p className="offer-label">Our guarantee</p>
+                <p className="offer-title">20 booked jobs in 60 days, or month 3 is free.</p>
+                <p>If our campaigns don’t put 20 booked jobs on your calendar in your first 60 days, you don’t pay for month 3. We keep working either way.</p>
+                <a className="offer-link" href="/schedule" data-cta="guarantee">See if you qualify</a>
               </div>
             </div>
           </section>

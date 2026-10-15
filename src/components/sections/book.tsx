@@ -27,12 +27,6 @@ export function Book() {
                 <a className="btn btn-dark" href="https://cal.com/ossmark-media-qzze1b/15min" target="_blank" rel="noopener" data-cal-direct>Open the booking calendar</a>
               </div>
             </div>
-            <p className="book-direct">
-              Prefer email? <span className="book-direct-address">donoven@ossmark.media</span>
-              <button type="button" className="copy-btn copy-btn-light" data-copy="donoven@ossmark.media" aria-label="Copy email address donoven@ossmark.media">
-                <span data-copy-label>Copy</span>
-              </button>
-            </p>
             <p className="book-confirm" role="status" aria-live="polite" data-booked></p>
           </div>
 
