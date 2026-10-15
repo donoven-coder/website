@@ -3,7 +3,7 @@
 // requests are rejected. Cal retries deliveries, so a repeat of an event that's already recorded
 // (same booking uid and status) is acknowledged without touching Notion or alerting again.
 import { env, json, readBody } from "./_lib/http.js";
-import { sendAlertEmail, sendSlack, slackEscape, slackLink } from "./_lib/alerts.js";
+import { cancelScheduledEmail, sendAlertEmail, sendSlack, slackEscape, slackLink } from "./_lib/alerts.js";
 import { attendee, formatET, HANDLED, validSignature, type CalEvent, type CalPayload, type CalWebhook } from "./_lib/cal.js";
 import { CONSENT_OPTED_IN, createLead, findLeadBy, PROPS, prop, SOURCE, STATUS, updateLead, type Lead, type Props } from "./_lib/notion.js";
 import { fitFor, isBudget, isTrade } from "../src/lib/qualifier.js";
@@ -50,6 +50,9 @@ export async function POST(request: Request): Promise<Response> {
 
   let lead: Lead | null = null;
   let notionError = "";
+  let followUp1Cancelled = false;
+  let followUp1CancelFailed = false;
+  let followUp1Id = "";
   try {
     lead = (await findLeadBy(PROPS.leadId, meta.lead_id ?? ""))
       ?? (await findLeadBy(PROPS.bookingId, uid))
@@ -60,12 +63,22 @@ export async function POST(request: Request): Promise<Response> {
       return json({ ok: true, duplicate: true });
     }
 
+    // A booking cancels follow-up 1 (A1) while it's still waiting to go out (rows under an hour
+    // old; after that it has already been sent). The ID is cleared once Brevo confirms.
+    const pending = lead?.followUp1Id && ev !== "BOOKING_CANCELLED" && Date.now() - Date.parse(lead.created || "0") < 60 * 60 * 1000;
+    if (pending) {
+      followUp1Id = lead!.followUp1Id;
+      followUp1Cancelled = await cancelScheduledEmail(followUp1Id);
+      followUp1CancelFailed = !followUp1Cancelled;
+    }
+
     const changes: Props = {
       [PROPS.status]: prop.select(target),
       [PROPS.booked]: prop.checkbox(ev !== "BOOKING_CANCELLED"),
       [PROPS.bookingId]: prop.text(uid),
       ...(p.startTime && ev !== "BOOKING_CANCELLED" ? { [PROPS.callTime]: prop.date(p.startTime) } : {}),
       ...(who.email ? { [PROPS.email]: prop.email(who.email) } : {}),
+      ...(followUp1Cancelled ? { [PROPS.followUp1Id]: prop.text("") } : {}),
     };
 
     if (lead) {
@@ -126,6 +139,17 @@ export async function POST(request: Request): Promise<Response> {
     jobs.push(sendSlack(`Rescheduled: ${b} → ${slackEscape(when || "new time unknown")}${was ? ` (was ${slackEscape(was)})` : ""}\n${notionLine}${warn}`));
   } else {
     jobs.push(sendSlack(`Cancelled: ${b}${when ? ` · was ${slackEscape(when)}` : ""}\n${notionLine}${warn}`));
+  }
+  if (followUp1CancelFailed) {
+    jobs.push(sendSlack(`⚠️ Couldn't cancel follow-up 1 for ${b} (they booked). It may still go out within the hour.\n${notionLine}`));
+    jobs.push(sendAlertEmail(`Follow-up 1 may still send: ${business.replace(/\s+/g, " ")}`, [
+      `${business} booked a call, but follow-up 1 ("Your call isn't booked yet") couldn't be cancelled in Brevo.`,
+      "It may still go out within the hour.",
+      "",
+      `Their email: ${who.email || lead?.email || "-"}`,
+      `Brevo message ID: ${followUp1Id}`,
+      `Notion: ${lead?.url || "-"}`,
+    ].join("\n")));
   }
   await Promise.all(jobs);
 

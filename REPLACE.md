@@ -17,7 +17,9 @@ a `<!-- REPLACE: ... -->` comment and/or a `data-replace` attribute.
 - After booking, visitors land on `/booked` (noindex, PageView only). Video: set `CONFIRMATION_VIDEO_URL` in `src/booked/config.ts` to a Loom share link.
 - Fit threshold: `FIT_REVIEW_THRESHOLD` in `src/lib/qualifier.ts` (budget options are generated from it).
 - Notion property names live in one place: `PROPS` in `api/_lib/notion.ts`.
-- Vercel environment variables: `NOTION_TOKEN`, `SLACK_WEBHOOK_URL`, `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `ALERT_EMAIL`, `CAL_WEBHOOK_SECRET` (optional: `BREVO_SENDER_NAME`, `ALLOWED_ORIGINS`, `NOTION_LEADS_DATA_SOURCE_ID`).
+- Follow-ups to leads who don't book (copy in `api/_lib/followups.ts`): follow-up 1 is scheduled in Brevo one hour after the form (cancelled by the Cal webhook if they book); follow-up 2 goes out from the daily job `api/cron/follow-up.ts` (Vercel Cron, about 10am ET) two or more days after the form. Tick **Do Not Contact** on a lead's row when they reply "stop".
+- Tests: `npm test` (mocked Notion, Brevo and Slack; nothing is sent).
+- Vercel environment variables: `NOTION_TOKEN`, `SLACK_WEBHOOK_URL`, `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `ALERT_EMAIL`, `CAL_WEBHOOK_SECRET`, `CRON_SECRET` (optional: `BREVO_SENDER_NAME`, `FOLLOWUP_REPLY_TO`, `ALLOWED_ORIGINS`, `NOTION_LEADS_DATA_SOURCE_ID`).
 
 ## Highest impact for conversions
 - [ ] **Founder video** (hero panel): record a 60–90 second video covering who you are, who you help and what the call covers, then embed it in `.hero-media`. Until then, the panel shows the animated map.

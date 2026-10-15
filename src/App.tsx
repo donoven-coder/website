@@ -303,6 +303,11 @@ export default function App() {
                       <p className="field-error" id="q-phone-err" aria-live="polite"></p>
                     </div>
                     <div className="field">
+                      <label htmlFor="q-email">Email <span className="req" aria-hidden="true">*</span></label>
+                      <input id="q-email" name="email" type="email" autoComplete="email" inputMode="email" required maxLength={LIMITS.email} aria-describedby="q-email-err" />
+                      <p className="field-error" id="q-email-err" aria-live="polite"></p>
+                    </div>
+                    <div className="field">
                       <label htmlFor="q-goal">What would you like more of?</label>
                       <input id="q-goal" name="goal" type="text" maxLength={LIMITS.goal} placeholder="More AC replacement calls in Cherry Hill" />
                     </div>

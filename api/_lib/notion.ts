@@ -22,6 +22,9 @@ export const PROPS = {
   utmCampaign: "UTM campaign",
   utmContent: "UTM content",
   fbclid: "fbclid",
+  followUp1Id: "Follow-up 1 ID", // text: Brevo messageId of the scheduled follow-up 1 email
+  followUp2Sent: "Follow-up 2 sent", // checkbox: ticked by the daily follow-up job
+  doNotContact: "Do Not Contact", // checkbox: never email (ticked by hand, e.g. after a "stop" reply)
 } as const;
 
 // Notion select options can't contain commas, so these use a dash.
@@ -66,6 +69,7 @@ export type Props = Record<string, unknown>;
 export type Lead = {
   id: string; url: string; business: string; phone: string; niche: string; budget: string;
   goal: string; fit: string; email: string; status: string; bookingId: string; leadId: string; callTime: string;
+  followUp1Id: string; created: string;
 };
 
 type P = Record<string, { type?: string; [k: string]: unknown }>;
@@ -90,6 +94,7 @@ function readLead(page: Record<string, unknown>): Lead {
     business: get(PROPS.business), phone: get(PROPS.phone), niche: get(PROPS.niche), budget: get(PROPS.budget),
     goal: get(PROPS.goal), fit: get(PROPS.fit), email: get(PROPS.email), status: get(PROPS.status),
     bookingId: get(PROPS.bookingId), leadId: get(PROPS.leadId), callTime: get(PROPS.callTime),
+    followUp1Id: get(PROPS.followUp1Id), created: String(page.created_time ?? ""),
   };
 }
 
@@ -112,4 +117,28 @@ export async function findLeadBy(property: string, value: string): Promise<Lead 
   });
   const first = (res.results as Record<string, unknown>[] | undefined)?.[0];
   return first ? readLead(first) : null;
+}
+
+/**
+ * Website leads due follow-up 2: from the qualifier, with an email, added on or before `cutoff`,
+ * never booked (Booked unticked and no Cal booking ID), not Do Not Contact, follow-up 2 not sent.
+ */
+export async function findFollowUp2Due(cutoff: Date, limit: number): Promise<Lead[]> {
+  const res = await notion(`/v1/data_sources/${DATA_SOURCE()}/query`, "POST", {
+    filter: {
+      and: [
+        { property: PROPS.source, select: { equals: SOURCE.qualifier } },
+        { property: PROPS.leadId, rich_text: { is_not_empty: true } },
+        { property: PROPS.email, email: { is_not_empty: true } },
+        { timestamp: "created_time", created_time: { on_or_before: cutoff.toISOString() } },
+        { property: PROPS.booked, checkbox: { equals: false } },
+        { property: PROPS.bookingId, rich_text: { is_empty: true } },
+        { property: PROPS.doNotContact, checkbox: { equals: false } },
+        { property: PROPS.followUp2Sent, checkbox: { equals: false } },
+      ],
+    },
+    sorts: [{ timestamp: "created_time", direction: "ascending" }],
+    page_size: limit,
+  });
+  return ((res.results as Record<string, unknown>[] | undefined) ?? []).map(readLead);
 }

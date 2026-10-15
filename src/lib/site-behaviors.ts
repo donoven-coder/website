@@ -3,7 +3,7 @@
 // Runs once on the prerendered page (started from src/main.ts).
 
 import { trackLead, trackSchedule, type QualifierAnswers } from "@/lib/tracking";
-import { fitFor, isPhone, LIMITS } from "@/lib/qualifier";
+import { fitFor, isEmail, isPhone, LIMITS } from "@/lib/qualifier";
 import { captureAttribution, readAttribution } from "@/lib/attribution";
 
 let initialized = false;
@@ -681,7 +681,7 @@ export function initSite(): () => void {
     const direct = cal.querySelector<HTMLAnchorElement>("[data-cal-direct]");
     let answers: QualifierAnswers | null = null;
     // Contact details stay out of the pixel and out of page URLs (see prefill below).
-    let contact: { business: string; phone: string; leadId: string } | null = null;
+    let contact: { business: string; phone: string; email: string; leadId: string } | null = null;
     let leadSent = false;
     let redirecting = false;
     let scriptFailed = false;
@@ -789,9 +789,9 @@ export function initSite(): () => void {
     };
     ["focusin", "pointerdown", "change"].forEach((t) => qualify.addEventListener(t, warm, { passive: true }));
 
-    // Prefill for Cal: "notes" fills the booking's Additional notes; metadata[...] is stored on the booking.
-    // Business name and phone go into the embedded calendar's notes only (by request); they are
-    // left out of the fallback link-out, which opens as a visible URL in a new tab.
+    // Prefill for Cal: "notes" fills the booking's Additional notes; metadata[...] is stored on the booking;
+    // "email" fills the attendee email. Business name, phone and email go into the embedded calendar
+    // only (by request); they are left out of the fallback link-out, which opens as a visible URL in a new tab.
     const prefill = (a: QualifierAnswers, withContact: boolean): Record<string, string> => {
       const notes = [
         a.fit === "review" ? "[Review fit]" : "",
@@ -808,6 +808,7 @@ export function initSite(): () => void {
         "metadata[goal]": a.goal || "-",
         "metadata[fit]": a.fit,
         ...(contact ? { "metadata[lead_id]": contact.leadId } : {}),
+        ...(withContact && contact?.email ? { email: contact.email } : {}),
       };
     };
 
@@ -843,6 +844,7 @@ export function initSite(): () => void {
       ad_budget: (v) => (v ? "" : "Choose your monthly ad spend."),
       business: (v) => (v.trim() ? "" : "Enter your business name."),
       phone: (v) => (!v.trim() ? "Enter your best phone number." : isPhone(v) ? "" : "Enter a phone number like 856-555-0123."),
+      email: (v) => (!v.trim() ? "Enter your email address." : isEmail(v) ? "" : "Enter an email like name@company.com."),
     };
     const validate = (el: HTMLInputElement | HTMLSelectElement) => {
       const msg = check[el.name]?.(el.value) ?? "";
@@ -897,10 +899,11 @@ export function initSite(): () => void {
       contact = {
         business: String(data.get("business")).trim().slice(0, LIMITS.business),
         phone: String(data.get("phone")).trim().slice(0, LIMITS.phone),
+        email: String(data.get("email") ?? "").trim().slice(0, LIMITS.email),
         leadId: contact?.leadId ?? newLeadId(),
       };
       // The lead goes out first, so a pixel or calendar error can't stop it being captured.
-      sendLead({ lead_id: contact.leadId, ...answers, business: contact.business, phone: contact.phone,
+      sendLead({ lead_id: contact.leadId, ...answers, business: contact.business, phone: contact.phone, email: contact.email,
         hp_ref: String(data.get("hp_ref") ?? ""), form_ms: firstTouch ? Math.round(performance.now() - firstTouch) : -1,
         ...readAttribution() });
       try { if (!leadSent) { leadSent = true; trackLead(answers); } } catch { /* tracking is optional */ }

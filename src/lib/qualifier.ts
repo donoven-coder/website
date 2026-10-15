@@ -39,7 +39,7 @@ export function fitFor(trade: string, budgetLabel: string): Fit {
   return trade === OTHER_TRADE || (bracket !== undefined && bracket.max < FIT_REVIEW_THRESHOLD) ? "review" : "ok";
 }
 
-export const LIMITS = { business: 120, phone: 30, goal: 500 } as const;
+export const LIMITS = { business: 120, phone: 30, goal: 500, email: 254 } as const;
 
 /** Loose phone check: digits plus common separators, 7 to 15 digits. */
 export function isPhone(value: string): boolean {
@@ -47,6 +47,12 @@ export function isPhone(value: string): boolean {
   if (!v || v.length > LIMITS.phone || !/^[+\d\s().\-]+$/.test(v)) return false;
   const digits = v.replace(/\D/g, "").length;
   return digits >= 7 && digits <= 15;
+}
+
+/** Plain email format check: something@domain.tld, no spaces, at most 254 characters. */
+export function isEmail(value: string): boolean {
+  const v = value.trim();
+  return v.length <= LIMITS.email && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
 }
 
 export const isTrade = (v: string) => (TRADES as readonly string[]).includes(v);

@@ -3,13 +3,14 @@
 // record-keeping; a failed Notion write still reaches Slack and email with every detail, and
 // likely bots go to Slack flagged instead of being dropped. Every early return logs a one-line reason.
 import { clientIp, env, json, originAllowed, rateLimited, readBody } from "./_lib/http.js";
-import { sendAlertEmail, sendSlack, slackEscape, slackLink } from "./_lib/alerts.js";
-import { CONSENT_OPTED_IN, createLead, PROPS, prop, SOURCE, STATUS } from "./_lib/notion.js";
-import { fitFor, isBudget, isPhone, isTrade, LIMITS } from "../src/lib/qualifier.js";
+import { cancelScheduledEmail, sendAlertEmail, sendLeadEmail, sendSlack, slackEscape, slackLink } from "./_lib/alerts.js";
+import { bookingLink, followUp1 } from "./_lib/followups.js";
+import { CONSENT_OPTED_IN, createLead, findLeadBy, PROPS, prop, SOURCE, STATUS } from "./_lib/notion.js";
+import { fitFor, isBudget, isEmail, isPhone, isTrade, LIMITS } from "../src/lib/qualifier.js";
 import { formatET } from "../src/lib/time.js";
 
 type LeadInput = {
-  lead_id: string; trade: string; ad_budget: string; business: string; phone: string; goal: string;
+  lead_id: string; trade: string; ad_budget: string; business: string; phone: string; goal: string; email: string;
   utm_source: string; utm_medium: string; utm_campaign: string; utm_content: string; fbclid: string;
 };
 
@@ -23,6 +24,7 @@ function validate(body: Record<string, unknown>): { lead?: LeadInput; error?: st
     business: str(body.business, LIMITS.business),
     phone: str(body.phone, LIMITS.phone),
     goal: str(body.goal, LIMITS.goal),
+    email: str(body.email, LIMITS.email),
     utm_source: str(body.utm_source, 200),
     utm_medium: str(body.utm_medium, 200),
     utm_campaign: str(body.utm_campaign, 200),
@@ -34,11 +36,16 @@ function validate(body: Record<string, unknown>): { lead?: LeadInput; error?: st
   if (!isBudget(lead.ad_budget)) return { error: "ad_budget" };
   if (!lead.business) return { error: "business" };
   if (!isPhone(lead.phone)) return { error: "phone" };
+  // Optional for the server (a page opened before the field existed sends none: no follow-ups then).
+  if (lead.email && !isEmail(lead.email)) return { error: "email" };
   return { lead };
 }
 
 /** Faster than this from first touching the form to submitting is treated as a likely bot. */
 const MIN_FORM_MS = 3000;
+
+/** Follow-up 1 goes out this long after the form, unless they book first (the Cal webhook cancels it). */
+const FOLLOW_UP_1_DELAY_MS = 60 * 60 * 1000;
 
 /** One log line per early return: a reason only, never secrets or what the visitor typed. */
 const reject = (reason: string, res: Response) => { console.warn(`[lead] rejected: ${reason}`); return res; };
@@ -83,6 +90,22 @@ export async function POST(request: Request): Promise<Response> {
     return json({ ok: true, pageId: null });
   }
 
+  // Follow-up 1 (A1): scheduled in Brevo before the Notion write, so its ID is saved on the row in
+  // the same write and a booking can always cancel it. Skipped without an email, and for a second
+  // submit from the same visit (that lead already has one). Never blocks the Notion save: on any
+  // Brevo error the row is simply saved without an ID.
+  let followUp1Id = "";
+  let followUp1Status = "skipped";
+  if (lead.email) {
+    let alreadyScheduled = false;
+    try { alreadyScheduled = Boolean((await findLeadBy(PROPS.leadId, lead.lead_id))?.followUp1Id); } catch { /* treat as new */ }
+    if (!alreadyScheduled) {
+      const a1 = followUp1(lead.business, bookingLink(lead.email, lead.lead_id));
+      followUp1Id = await sendLeadEmail(lead.email, a1.subject, a1.text, new Date(Date.now() + FOLLOW_UP_1_DELAY_MS));
+      followUp1Status = followUp1Id ? "scheduled" : "failed";
+    }
+  }
+
   let notionUrl = "";
   let pageId = "";
   let notionError = "";
@@ -103,12 +126,16 @@ export async function POST(request: Request): Promise<Response> {
       [PROPS.utmCampaign]: prop.text(lead.utm_campaign),
       [PROPS.utmContent]: prop.text(lead.utm_content),
       [PROPS.fbclid]: prop.text(lead.fbclid),
+      ...(lead.email ? { [PROPS.email]: prop.email(lead.email) } : {}),
+      ...(followUp1Id ? { [PROPS.followUp1Id]: prop.text(followUp1Id) } : {}),
     });
     notionUrl = page.url;
     pageId = page.id;
   } catch (err) {
     notionError = (err as Error).message;
     console.error("[lead] Notion write failed:", notionError);
+    // No row means nothing could cancel follow-up 1 after a booking, so don't send it.
+    if (followUp1Id) followUp1Status = (await cancelScheduledEmail(followUp1Id)) ? "cancelled" : "cancel_failed";
   }
 
   const slackText = notionUrl
@@ -135,6 +162,7 @@ export async function POST(request: Request): Promise<Response> {
         `Monthly ad spend: ${lead.ad_budget}`,
         `Wants more of: ${v(lead.goal)}`,
         `Phone: ${lead.phone}`,
+        `Email: ${v(lead.email)}`,
         `Fit: ${fit}`,
         `Notion: ${notionUrl}`,
       ].join("\n"))
@@ -144,6 +172,7 @@ export async function POST(request: Request): Promise<Response> {
         "",
         `Business: ${lead.business}`,
         `Phone: ${lead.phone}`,
+        `Email: ${v(lead.email)}`,
         `Trade: ${lead.trade}`,
         `Monthly ad spend: ${lead.ad_budget}`,
         `Wants more of: ${v(lead.goal)}`,
@@ -157,7 +186,7 @@ export async function POST(request: Request): Promise<Response> {
         `Received: ${formatET(new Date().toISOString())}`,
       ].join("\n"));
   const [slackOk, emailOk] = await Promise.all([sendSlack(slackText), emailJob]);
-  console.log(`[lead] done notion=${Boolean(pageId)} slack=${slackOk} email=${emailOk}`);
+  console.log(`[lead] done notion=${Boolean(pageId)} slack=${slackOk} email=${emailOk} followup1=${followUp1Status}`);
 
   return json({ ok: true, pageId: pageId || null });
 }
