@@ -3,7 +3,7 @@ import { LegalPage } from "./LegalPage";
 // /privacy page text. Keep it word for word as approved; change it only with a new effective date.
 export function Privacy() {
   return (
-    <LegalPage title="Privacy Policy" effective="October 11, 2026">
+    <LegalPage title="Privacy Policy" effective="October 14, 2026">
       <h2>The short version</h2>
       <p>We collect the information you give us when you ask about our services or book a call. We use it to reply to you and to run our advertising. We use the Meta Pixel to measure our ads. We don't sell your personal information.</p>
 
@@ -17,6 +17,7 @@ export function Privacy() {
       <h2>How we use it</h2>
       <ul>
         <li>To reply to your request and run the call you booked</li>
+        <li>To follow up by email about booking your call if you don't book right away</li>
         <li>To decide whether we're a good fit to work together</li>
         <li>To measure and improve our ads and website</li>
         <li>To keep the site secure and prevent spam</li>
@@ -46,7 +47,8 @@ export function Privacy() {
       <h2>Your choices</h2>
       <ul>
         <li>Email us at donoven@ossmark.media to ask what we have about you, to correct it, or to delete it. We'll reply within 30 days.</li>
-        <li>Marketing emails: every one includes an unsubscribe link, or you can email us.</li>
+        <li>Marketing emails: reply "stop" to any of them, or email us, and we won't email you again.</li>
+        <li>Follow-up emails: if you don't book a call, we may send you up to two short emails about booking one. Reply "stop" to any of them and we won't email you again.</li>
         <li>California and other state residents: you may have additional rights to know, delete, and correct your information, and to opt out of the sale or sharing of it. We don't sell personal information. Use the email above to make a request.</li>
       </ul>
 
