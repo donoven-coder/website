@@ -202,6 +202,27 @@ describe("answers from Cal's booking form", () => {
     expect(props["Lead Status"]).toEqual({ select: { name: "Booked" } });
   });
 
+  it.each(["Other", "other "])("maps the trade answer %j to Other home service, tagged for review", async (other) => {
+    const fakes = installFakes();
+    expect((await POST(hook("BOOKING_CREATED", calFormBooking({ trade: other })))).status).toBe(200);
+    expect(created(fakes)["Niche"]).toEqual({ select: { name: "Other home service" } });
+    expect(created(fakes)["Fit"]).toEqual({ select: { name: "review" } });
+  });
+
+  it("still drops an unknown trade such as \"Plumber\"", async () => {
+    const fakes = installFakes();
+    expect((await POST(hook("BOOKING_CREATED", calFormBooking({ trade: "Plumber" })))).status).toBe(200);
+    expect(created(fakes)).not.toHaveProperty("Niche");
+    expect(created(fakes)).not.toHaveProperty("Fit");
+  });
+
+  it.each(["HVAC", "Plumbing", "Roofing", "Electrical"])("passes the trade %j through unchanged", async (trade) => {
+    const fakes = installFakes();
+    await POST(hook("BOOKING_CREATED", calFormBooking({ trade })));
+    expect(created(fakes)["Niche"]).toEqual({ select: { name: trade } });
+    expect(created(fakes)["Fit"]).toEqual({ select: { name: "ok" } });
+  });
+
   it("writes the answers onto an existing lead row on a new booking, but not on a reschedule", async () => {
     let fakes = installFakes(withLead(90));
     await POST(hook("BOOKING_CREATED", calFormBooking({}, { metadata: { lead_id: "lead-1234-abcd" } })));

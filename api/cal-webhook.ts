@@ -6,7 +6,7 @@ import { env, json, readBody } from "./_lib/http.js";
 import { cancelScheduledEmail, sendAlertEmail, sendSlack, slackEscape, slackLink } from "./_lib/alerts.js";
 import { answer, attendee, formatET, HANDLED, validSignature, type CalEvent, type CalPayload, type CalWebhook } from "./_lib/cal.js";
 import { CONSENT_OPTED_IN, createLead, findLeadBy, PROPS, prop, SOURCE, STATUS, updateLead, type Lead, type Props } from "./_lib/notion.js";
-import { fitFor, isBudget, isPhone, isTrade, LIMITS } from "../src/lib/qualifier.js";
+import { fitFor, isBudget, isPhone, isTrade, LIMITS, OTHER_TRADE } from "../src/lib/qualifier.js";
 
 const TARGET_STATUS: Record<CalEvent, string> = {
   BOOKING_CREATED: STATUS.booked,
@@ -48,7 +48,8 @@ export async function POST(request: Request): Promise<Response> {
   // "Business:" / "Phone:" note lines, as before. Trade and ad spend must match the site's options exactly.
   const cal = {
     business: answer(p, "business").slice(0, LIMITS.business),
-    trade: answer(p, "trade"),
+    // Cal's trade dropdown says "Other"; the site and Notion call it "Other home service".
+    trade: answer(p, "trade").toLowerCase() === "other" ? OTHER_TRADE : answer(p, "trade"),
     budget: answer(p, "ad_budget"),
     goal: answer(p, "notes").slice(0, LIMITS.goal),
     phone: (answer(p, "attendeePhoneNumber") || (p.attendees?.[0]?.phoneNumber ?? "").trim()).slice(0, LIMITS.phone),
