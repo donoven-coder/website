@@ -238,22 +238,12 @@ export default function App() {
             </div>
           </section>
 
-          {/* BOOK: the qualifier and calendar live on /schedule. id="book" keeps old /#book links landing here. */}
-          <section className="book" id="book" aria-labelledby="book-title">
-            <div className="wrap">
-              <div className="book-head" data-reveal>
-                <h2 id="book-title" className="book-title">Book your free discovery call</h2>
-                <p>Pick a time that works for you. Fifteen minutes on Zoom, no pressure.</p>
-                <a className="btn btn-dark btn-lg book-cta" href="/schedule" data-cta="book">Book a call</a>
-              </div>
-            </div>
-          </section>
-
-          {/* FINAL CTA */}
-          <section className="closer" aria-labelledby="closer-title">
+          {/* FINAL CTA. id="book" keeps old /#book links landing here and hides the mobile booking bar here. */}
+          <section className="closer" id="book" aria-labelledby="closer-title">
             <div className="wrap closer-inner">
               <span className="closer-logo" aria-hidden="true" data-closer-logo></span>
               <h2 id="closer-title" className="closer-title">Ready to fill your calendar?</h2>
+              <p className="closer-sub">Fifteen minutes on Zoom, no pressure.</p>
               <a className="btn btn-sky btn-lg" href="/schedule" data-cta="closer">Book your free discovery call</a>
             </div>
           </section>
